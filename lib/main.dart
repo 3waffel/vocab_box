@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 
-import 'package:vocab_box/home_route.dart';
+import 'package:vocab_box/screens/home.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  runApp(const MyApp());
+  runApp(const App());
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class App extends StatelessWidget {
+  const App({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -19,7 +19,7 @@ class MyApp extends StatelessWidget {
             seedColor: Colors.deepPurple, brightness: Brightness.dark),
         useMaterial3: true,
       ),
-      home: MyHomePage(),
+      home: HomeScreen(),
     );
   }
 }
