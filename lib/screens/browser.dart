@@ -1,28 +1,54 @@
 import 'package:flutter/material.dart';
+import 'package:vocab_box/deck_loader.dart';
 import 'package:vocab_box/models/card.dart';
 
 /// TODO implement lazy load
-class BrowserScreen extends StatelessWidget {
-  const BrowserScreen({super.key, required this.cardList});
-  final List<CardModel> cardList;
+class BrowserScreen extends StatefulWidget {
+  const BrowserScreen({super.key});
+
+  @override
+  State<StatefulWidget> createState() => _BrowserScreenState();
+}
+
+class _BrowserScreenState extends State<BrowserScreen> {
+  List<CardModel> filtered = [];
+
+  @override
+  void initState() {
+    super.initState();
+    filtered = DeckLoader().cardList;
+  }
 
   @override
   Widget build(BuildContext context) {
+    final cardList = DeckLoader().cardList;
     return Scaffold(
       appBar: AppBar(
         title: Text("Browser"),
       ),
+      bottomSheet: Padding(
+          padding: EdgeInsets.all(16),
+          child: TextField(
+            onChanged: (value) {
+              setState(() => filtered =
+                  cardList.where((item) => item.word.contains(value)).toList());
+            },
+            decoration: InputDecoration(
+              prefixIcon: Icon(Icons.search),
+            ),
+          )),
       body: ListView.builder(
-        itemCount: cardList.length,
+        itemCount: filtered.length,
         itemBuilder: (context, index) => ListTile(
           title: Text(
-            cardList[index].word,
-            style: TextStyle(color: cardList[index].color),
+            filtered[index].word,
+            style: TextStyle(color: filtered[index].color),
           ),
+          subtitle: Text("${filtered[index].meaning}"),
           onTap: () => Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => DetailScreen(card: cardList[index]),
+              builder: (context) => DetailScreen(card: filtered[index]),
             ),
           ),
         ),
@@ -39,26 +65,13 @@ class DetailScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          card.word,
-          style: TextStyle(color: card.color),
-        ),
+        title: Text(card.word, style: TextStyle(color: card.color)),
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          ListTile(
-            title: Text(
-              card.meaning,
-              style: TextStyle(fontSize: 16),
-            ),
-          ),
-          ListTile(
-            title: Text(
-              card.example,
-              style: TextStyle(fontSize: 16),
-            ),
-          ),
+          ListTile(title: Text(card.meaning, style: TextStyle(fontSize: 16))),
+          ListTile(title: Text(card.example, style: TextStyle(fontSize: 16))),
           ListTile(
             title: Text(
               "Correct Times: ${card.correctTimes.toString()}",

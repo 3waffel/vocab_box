@@ -6,16 +6,16 @@ import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:vocab_box/models/card.dart';
 
 class CardDatabase {
-  static final CardDatabase _instance = CardDatabase._internal();
-  static Database? _database;
+  static final _databaseName = 'records.db';
+  static final _databaseVersion = 1;
+  static final table = 'cards';
 
   /// private constructor
   CardDatabase._internal();
+  static final CardDatabase _instance = CardDatabase._internal();
+  factory CardDatabase() => _instance;
 
-  factory CardDatabase() {
-    return _instance;
-  }
-
+  static Database? _database;
   Future<Database> get database async {
     if (_database != null) {
       return _database!;
@@ -26,7 +26,7 @@ class CardDatabase {
 
   Future<String> get databasePath async {
     final documentsDirectory = await getApplicationDocumentsDirectory();
-    return join(documentsDirectory.path, 'records.db');
+    return join(documentsDirectory.path, _databaseName);
   }
 
   Future<Database> _initDatabase() async {
@@ -37,7 +37,7 @@ class CardDatabase {
       final database = await databaseFactory.openDatabase(
         path,
         options: OpenDatabaseOptions(
-          version: 1,
+          version: _databaseVersion,
           onCreate: _createDatabase,
         ),
       );
@@ -45,7 +45,7 @@ class CardDatabase {
     } else if (Platform.isAndroid || Platform.isIOS) {
       final database = await openDatabase(
         path,
-        version: 1,
+        version: _databaseVersion,
         onCreate: _createDatabase,
       );
       return database;
@@ -55,7 +55,7 @@ class CardDatabase {
 
   Future<void> _createDatabase(Database db, int version) async {
     return await db.execute('''
-      CREATE TABLE IF NOT EXISTS cards (
+      CREATE TABLE IF NOT EXISTS $table (
         ${CardModel.fields}
       )
     ''');

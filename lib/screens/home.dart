@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqflite/sqflite.dart';
+import 'package:vocab_box/deck_loader.dart';
 
 import 'package:vocab_box/screens/browser.dart';
 import 'package:vocab_box/screens/learning.dart';
@@ -16,12 +17,14 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  List<CardModel>? cardList = null;
+  LearningScreenArguments learningScreenArguments =
+      LearningScreenArguments(learningList: []);
 
   @override
   void initState() {
     super.initState();
     _loadPrefs();
+    _syncRecords().then((value) => _loadLearningArguments());
   }
 
   Future<void> _loadPrefs() async {
@@ -31,12 +34,13 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-  Future<void> _loadRecords() async {
+  /// Sync deck_loader with database
+  Future<void> _syncRecords() async {
     final database = await CardDatabase().database;
     final records = await database.query('cards');
-    late List<CardModel> newCardList;
     if (records.length == 0) {
-      newCardList = await DeckLoader.loadDefaultDeck();
+      // TODO switch between different decks
+      final newCardList = await DeckLoader().loadDefaultDeck();
       for (final card in newCardList) {
         database.insert(
           'cards',
@@ -45,7 +49,7 @@ class _HomeScreenState extends State<HomeScreen> {
         );
       }
     } else {
-      newCardList = [
+      final newCardList = [
         for (final {
               'id': id as int,
               'word': word as String,
@@ -61,9 +65,42 @@ class _HomeScreenState extends State<HomeScreen> {
             correctTimes: correctTimes,
           ),
       ];
+      DeckLoader().cardList = newCardList;
     }
+  }
+
+  /// Draw 20 cards from deck
+  void _loadLearningArguments() async {
+    final cardList = await DeckLoader().cardList;
     setState(() {
-      cardList = newCardList;
+      learningScreenArguments = LearningScreenArguments(
+        learningList: cardList.where((item) => item.correctTimes < 3).take(20),
+      );
+    });
+  }
+
+  /// Update `learningList` and database when exiting `LearningScreen`
+  Future<void> _getResultFromLearningScreen(BuildContext context) async {
+    final LearningScreenArguments result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const LearningScreen(),
+        settings: RouteSettings(arguments: learningScreenArguments),
+      ),
+    );
+    final database = await CardDatabase().database;
+    for (final card in result.learningList) {
+      await database.update(
+        'cards',
+        card.toMap(),
+        where: 'id = ?',
+        whereArgs: [card.id],
+      );
+    }
+    // sync deck_loader with updated database
+    await _syncRecords();
+    setState(() {
+      learningScreenArguments = result;
     });
   }
 
@@ -80,32 +117,23 @@ class _HomeScreenState extends State<HomeScreen> {
           children: <Widget>[
             Padding(
               padding: EdgeInsets.only(top: 32),
-              child: TextButton(
-                child: Text("Load Default Deck"),
-                onPressed: _loadRecords,
+              child: ElevatedButton.icon(
+                icon: Icon(Icons.sync),
+                label: Text("Sync Records with Default Deck"),
+                onPressed: _syncRecords,
+                style: ButtonStyle(),
               ),
             ),
+            Text("Deck Count: ${DeckLoader().cardList.length}"),
             Padding(
               padding: EdgeInsets.only(top: 32),
-              child: TextButton(
-                child: Text(cardList != null
-                    ? "Current Deck: ${cardList!.length}"
-                    : "No Deck Selected"),
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const LearningScreen(),
-                      settings: RouteSettings(
-                        arguments: LearningScreenArguments(
-                          cardList: cardList ?? [],
-                        ),
-                      ),
-                    ),
-                  );
-                },
+              child: ElevatedButton.icon(
+                icon: Icon(Icons.book),
+                label: Text("Start Current Learning Group"),
+                onPressed: () => _getResultFromLearningScreen(context),
               ),
             ),
+            Text("Remaining: ${learningScreenArguments.learningList.length}"),
           ],
         ),
       ),
@@ -142,8 +170,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) =>
-                        BrowserScreen(cardList: cardList ?? []),
+                    builder: (context) => BrowserScreen(),
                   ),
                 );
               },
