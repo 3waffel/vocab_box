@@ -11,6 +11,11 @@ class DeckLoader {
   List<CardModel> get cardList => _cardList ?? [];
   set cardList(List<CardModel> cardList) => _cardList = cardList;
 
+  static Iterable<CardModel> _learningGroup = [];
+  Iterable<CardModel> get learningGroup => _learningGroup;
+  set learningGroup(Iterable<CardModel> learningGroup) =>
+      _learningGroup = learningGroup;
+
   Future<List<CardModel>> loadDefaultDeck() async {
     final rawString = await rootBundle.loadString('assets/word_list_a1.txt');
     final fields = CsvToListConverter(

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'package:vocab_box/screens/home.dart';
+import 'package:vocab_box/screens/navigation.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -19,7 +19,7 @@ class App extends StatelessWidget {
             seedColor: Colors.deepPurple, brightness: Brightness.dark),
         useMaterial3: true,
       ),
-      home: HomeScreen(),
+      home: NavigationScreen(),
     );
   }
 }

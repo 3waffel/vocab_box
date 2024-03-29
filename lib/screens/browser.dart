@@ -23,9 +23,7 @@ class _BrowserScreenState extends State<BrowserScreen> {
   Widget build(BuildContext context) {
     final cardList = DeckLoader().cardList;
     return Scaffold(
-      appBar: AppBar(
-        title: Text("Browser"),
-      ),
+      appBar: AppBar(title: Text("Browser")),
       bottomSheet: Padding(
           padding: EdgeInsets.all(16),
           child: TextField(

@@ -17,14 +17,11 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  LearningScreenArguments learningScreenArguments =
-      LearningScreenArguments(learningList: []);
-
   @override
   void initState() {
     super.initState();
     _loadPrefs();
-    _syncRecords().then((value) => _loadLearningArguments());
+    _syncRecords();
   }
 
   Future<void> _loadPrefs() async {
@@ -37,13 +34,13 @@ class _HomeScreenState extends State<HomeScreen> {
   /// Sync deck_loader with database
   Future<void> _syncRecords() async {
     final database = await CardDatabase().database;
-    final records = await database.query('cards');
+    final records = await database.query(CardDatabase.table);
     if (records.length == 0) {
       // TODO switch between different decks
       final newCardList = await DeckLoader().loadDefaultDeck();
       for (final card in newCardList) {
         database.insert(
-          'cards',
+          CardDatabase.table,
           card.toMap(),
           conflictAlgorithm: ConflictAlgorithm.replace,
         );
@@ -67,50 +64,34 @@ class _HomeScreenState extends State<HomeScreen> {
       ];
       DeckLoader().cardList = newCardList;
     }
+    setState(() {});
   }
 
-  /// Draw 20 cards from deck
-  void _loadLearningArguments() async {
-    final cardList = await DeckLoader().cardList;
-    setState(() {
-      learningScreenArguments = LearningScreenArguments(
-        learningList: cardList.where((item) => item.correctTimes < 3).take(20),
-      );
-    });
-  }
-
-  /// Update `learningList` and database when exiting `LearningScreen`
+  /// Update database when exiting `LearningScreen`
   Future<void> _getResultFromLearningScreen(BuildContext context) async {
-    final LearningScreenArguments result = await Navigator.push(
+    await Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => const LearningScreen(),
-        settings: RouteSettings(arguments: learningScreenArguments),
+        settings: RouteSettings(),
       ),
     );
     final database = await CardDatabase().database;
-    for (final card in result.learningList) {
+    for (final card in DeckLoader().learningGroup) {
       await database.update(
-        'cards',
+        CardDatabase.table,
         card.toMap(),
         where: 'id = ?',
         whereArgs: [card.id],
       );
     }
-    // sync deck_loader with updated database
-    await _syncRecords();
-    setState(() {
-      learningScreenArguments = result;
-    });
+    setState(() {});
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        title: Text("Home"),
-      ),
+      appBar: AppBar(title: Text("Home")),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.start,
@@ -124,56 +105,22 @@ class _HomeScreenState extends State<HomeScreen> {
                 style: ButtonStyle(),
               ),
             ),
-            Text("Deck Count: ${DeckLoader().cardList.length}"),
+            Text(
+              "Deck Count: ${DeckLoader().cardList.length}",
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
             Padding(
               padding: EdgeInsets.only(top: 32),
               child: ElevatedButton.icon(
                 icon: Icon(Icons.book),
                 label: Text("Start Current Learning Group"),
-                onPressed: () => _getResultFromLearningScreen(context),
+                onPressed: () async =>
+                    await _getResultFromLearningScreen(context),
               ),
             ),
-            Text("Remaining: ${learningScreenArguments.learningList.length}"),
-          ],
-        ),
-      ),
-      drawer: Drawer(
-        child: ListView(
-          children: [
-            DrawerHeader(
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text("Menu", style: TextStyle(fontSize: 24)),
-                  IconButton(
-                    icon: const Icon(Icons.close),
-                    onPressed: () => Navigator.pop(context),
-                  ),
-                ],
-              ),
-            ),
-            ListTile(
-              title: const Text("Settings"),
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const SettingsScreen(),
-                  ),
-                );
-              },
-            ),
-            ListTile(
-              title: const Text("Browser"),
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => BrowserScreen(),
-                  ),
-                );
-              },
+            Text(
+              "Remaining: ${DeckLoader().learningGroup.length}",
+              style: TextStyle(fontWeight: FontWeight.bold),
             ),
           ],
         ),

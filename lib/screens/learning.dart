@@ -2,6 +2,7 @@ import 'dart:collection';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
+import 'package:vocab_box/deck_loader.dart';
 import 'package:vocab_box/models/card.dart';
 
 class LearningScreen extends StatefulWidget {
@@ -12,18 +13,19 @@ class LearningScreen extends StatefulWidget {
 }
 
 class LearningScreenArguments {
-  Queue<CardModel> learningList;
-  final int maxCorrectTimes;
+  final int learningLimit;
+  final int learningGroupCount;
 
   LearningScreenArguments({
-    Iterable<CardModel>? learningList,
-    this.maxCorrectTimes = 3,
-  }) : learningList = Queue.from(learningList ?? const <CardModel>[]);
+    this.learningLimit = 3,
+    this.learningGroupCount = 20,
+  });
 }
 
 class _LearningScreenState extends State<LearningScreen> {
+  Queue<CardModel> learningQueue = Queue.from(DeckLoader().learningGroup);
+  LearningScreenArguments args = LearningScreenArguments();
   bool isVisible = false;
-  CardModel? card = null;
 
   @override
   void initState() {
@@ -31,31 +33,48 @@ class _LearningScreenState extends State<LearningScreen> {
   }
 
   /// Move the first card to the end of the list and reset visibility
-  void _updateCard(LearningScreenArguments args) {
-    if (args.learningList.length == 0) {
-      return;
+  void _updateCard() {
+    if (learningQueue.length != 0) {
+      final first = learningQueue.removeFirst();
+      if (first.correctTimes <= args.learningLimit) {
+        learningQueue.addLast(first);
+      }
+      DeckLoader().learningGroup = learningQueue;
     }
-    final first = args.learningList.removeFirst();
-    if (first.correctTimes <= args.maxCorrectTimes) {
-      args.learningList.addLast(first);
-    }
-    setState(() {
-      isVisible = false;
-    });
+    setState(() => isVisible = false);
+  }
+
+  void _startNewGroup() {
+    DeckLoader().learningGroup = DeckLoader()
+        .cardList
+        .where((item) => item.correctTimes <= args.learningLimit)
+        .take(args.learningGroupCount);
+    setState(() => learningQueue = Queue.from(DeckLoader().learningGroup));
   }
 
   @override
   Widget build(BuildContext context) {
-    final args =
-        ModalRoute.of(context)!.settings.arguments as LearningScreenArguments;
-    card = args.learningList.firstOrNull;
+    final ctxArgs = ModalRoute.of(context)!.settings.arguments;
+    if (ctxArgs != null && ctxArgs is LearningScreenArguments) {
+      args = ctxArgs;
+    }
+    final card = learningQueue.firstOrNull;
 
     return Scaffold(
-      appBar: AppBar(
-          title: Text("Learning"),
-          leading: BackButton(onPressed: () => Navigator.pop(context, args))),
+      appBar: AppBar(title: Text("Learning")),
       body: switch (card) {
-        null => Center(child: Text("Finished", style: TextStyle(fontSize: 32))),
+        null => Center(
+            child: Column(
+              children: [
+                Text("Finished", style: TextStyle(fontSize: 32)),
+                ElevatedButton.icon(
+                  icon: Icon(Icons.abc),
+                  label: Text("Start a new group"),
+                  onPressed: _startNewGroup,
+                )
+              ],
+            ),
+          ),
         CardModel card => InkWell(
             child: Center(
               child: Column(
@@ -65,7 +84,7 @@ class _LearningScreenState extends State<LearningScreen> {
                       child: SizedBox(
                         width: 100,
                         child: LinearProgressIndicator(
-                          value: card.correctTimes / args.maxCorrectTimes,
+                          value: card.correctTimes / args.learningLimit,
                         ),
                       )),
                   Padding(
@@ -101,20 +120,20 @@ class _LearningScreenState extends State<LearningScreen> {
           child: Column(children: [Icon(Icons.close), Text("Don't Know")]),
           onPressed: () {
             card?.correctTimes = 0;
-            _updateCard(args);
+            _updateCard();
           },
         ),
         MaterialButton(
           child: Column(children: [Icon(Icons.done), Text("Know")]),
           onPressed: () {
             card?.correctTimes += 1;
-            _updateCard(args);
+            _updateCard();
           },
         ),
         MaterialButton(
           child: Column(children: [Icon(Icons.skip_next), Text("Next")]),
           onPressed: () {
-            _updateCard(args);
+            _updateCard();
           },
         ),
       ],
