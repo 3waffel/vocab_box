@@ -1,9 +1,12 @@
 import 'dart:collection';
+import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
+import 'package:step_progress_indicator/step_progress_indicator.dart';
 import 'package:vocab_box/deck_loader.dart';
 import 'package:vocab_box/models/card.dart';
+import 'package:collection/collection.dart';
 
 class LearningScreen extends StatefulWidget {
   const LearningScreen({super.key});
@@ -36,9 +39,7 @@ class _LearningScreenState extends State<LearningScreen> {
   void _updateCard() {
     if (learningQueue.length != 0) {
       final first = learningQueue.removeFirst();
-      if (first.correctTimes <= args.learningLimit) {
-        learningQueue.addLast(first);
-      }
+      learningQueue.addLast(first);
       DeckLoader().learningGroup = learningQueue;
     }
     setState(() => isVisible = false);
@@ -58,19 +59,27 @@ class _LearningScreenState extends State<LearningScreen> {
     if (ctxArgs != null && ctxArgs is LearningScreenArguments) {
       args = ctxArgs;
     }
-    final card = learningQueue.firstOrNull;
+    final card = learningQueue
+        .firstWhereOrNull((item) => item.correctTimes <= args.learningLimit);
 
     return Scaffold(
       appBar: AppBar(title: Text("Learning")),
       body: switch (card) {
         null => Center(
             child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text("Finished", style: TextStyle(fontSize: 32)),
-                ElevatedButton.icon(
-                  icon: Icon(Icons.abc),
-                  label: Text("Start a new group"),
-                  onPressed: _startNewGroup,
+                Text(
+                  "Finished",
+                  style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
+                ),
+                Padding(
+                  padding: EdgeInsets.symmetric(vertical: 16),
+                  child: ElevatedButton.icon(
+                    icon: Icon(Icons.add),
+                    label: Text("Start a new group"),
+                    onPressed: _startNewGroup,
+                  ),
                 )
               ],
             ),
@@ -82,9 +91,13 @@ class _LearningScreenState extends State<LearningScreen> {
                   Padding(
                       padding: EdgeInsets.only(top: 32),
                       child: SizedBox(
-                        width: 100,
-                        child: LinearProgressIndicator(
-                          value: card.correctTimes / args.learningLimit,
+                        width: min(100, args.learningLimit * 20),
+                        child: StepProgressIndicator(
+                          currentStep: card.correctTimes,
+                          totalSteps: args.learningLimit,
+                          selectedColor: Theme.of(context).colorScheme.primary,
+                          unselectedColor:
+                              Theme.of(context).colorScheme.inversePrimary,
                         ),
                       )),
                   Padding(
@@ -114,29 +127,44 @@ class _LearningScreenState extends State<LearningScreen> {
             enableFeedback: false,
           ),
       },
-      persistentFooterAlignment: AlignmentDirectional.center,
-      persistentFooterButtons: [
-        MaterialButton(
-          child: Column(children: [Icon(Icons.close), Text("Don't Know")]),
-          onPressed: () {
-            card?.correctTimes = 0;
-            _updateCard();
-          },
+      bottomNavigationBar: BottomAppBar(
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: 6),
+              child: IconButton.filledTonal(
+                onPressed: () {
+                  card?.correctTimes = 0;
+                  _updateCard();
+                },
+                icon: Icon(Icons.close),
+              ),
+            ),
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: 6),
+              child: IconButton.filledTonal(
+                onPressed: () {
+                  card?.correctTimes += 1;
+                  _updateCard();
+                },
+                icon: Icon(Icons.done),
+              ),
+            ),
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: 6),
+              child: IconButton.filledTonal(
+                onPressed: () {
+                  _updateCard();
+                },
+                icon: Icon(Icons.skip_next),
+              ),
+            ),
+          ],
         ),
-        MaterialButton(
-          child: Column(children: [Icon(Icons.done), Text("Know")]),
-          onPressed: () {
-            card?.correctTimes += 1;
-            _updateCard();
-          },
-        ),
-        MaterialButton(
-          child: Column(children: [Icon(Icons.skip_next), Text("Next")]),
-          onPressed: () {
-            _updateCard();
-          },
-        ),
-      ],
+      ),
+      // persistentFooterAlignment: AlignmentDirectional.center,
+      // persistentFooterButtons:
     );
   }
 }

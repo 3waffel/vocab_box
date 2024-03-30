@@ -3,9 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:vocab_box/deck_loader.dart';
 
-import 'package:vocab_box/screens/browser.dart';
 import 'package:vocab_box/screens/learning.dart';
-import 'package:vocab_box/screens/settings.dart';
 import 'package:vocab_box/models/card.dart';
 import 'package:vocab_box/card_database.dart';
 
@@ -21,7 +19,6 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _loadPrefs();
-    _syncRecords();
   }
 
   Future<void> _loadPrefs() async {
@@ -64,6 +61,13 @@ class _HomeScreenState extends State<HomeScreen> {
       ];
       DeckLoader().cardList = newCardList;
     }
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content:
+          Text("Sync Done", style: Theme.of(context).textTheme.labelMedium),
+      showCloseIcon: true,
+      closeIconColor: Theme.of(context).colorScheme.primary,
+      backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+    ));
     setState(() {});
   }
 
@@ -85,7 +89,14 @@ class _HomeScreenState extends State<HomeScreen> {
         whereArgs: [card.id],
       );
     }
-    setState(() {});
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content:
+          Text("Deck Updated", style: Theme.of(context).textTheme.labelMedium),
+      showCloseIcon: true,
+      closeIconColor: Theme.of(context).colorScheme.primary,
+      backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+    ));
+    if (mounted) setState(() {});
   }
 
   @override
@@ -94,33 +105,25 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: AppBar(title: Text("Home")),
       body: Center(
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
             Padding(
-              padding: EdgeInsets.only(top: 32),
+              padding: EdgeInsets.only(top: 0),
               child: ElevatedButton.icon(
                 icon: Icon(Icons.sync),
-                label: Text("Sync Records with Default Deck"),
+                label: Text(
+                    "Sync Default Deck - ${DeckLoader().cardList.length} in total"),
                 onPressed: _syncRecords,
-                style: ButtonStyle(),
               ),
             ),
-            Text(
-              "Deck Count: ${DeckLoader().cardList.length}",
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
             Padding(
-              padding: EdgeInsets.only(top: 32),
+              padding: EdgeInsets.symmetric(vertical: 32),
               child: ElevatedButton.icon(
-                icon: Icon(Icons.book),
-                label: Text("Start Current Learning Group"),
+                icon: Icon(Icons.inbox),
+                label: Text("Start Current Group"),
                 onPressed: () async =>
                     await _getResultFromLearningScreen(context),
               ),
-            ),
-            Text(
-              "Remaining: ${DeckLoader().learningGroup.length}",
-              style: TextStyle(fontWeight: FontWeight.bold),
             ),
           ],
         ),

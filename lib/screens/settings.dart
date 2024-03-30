@@ -9,6 +9,7 @@ class SettingsScreen extends StatelessWidget {
         title: const Text("Settings"),
       ),
       body: ListView(
+        padding: EdgeInsets.all(16),
         children: [
           ListTile(
             title: ElevatedButton(

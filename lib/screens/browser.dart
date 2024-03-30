@@ -36,6 +36,7 @@ class _BrowserScreenState extends State<BrowserScreen> {
             ),
           )),
       body: ListView.builder(
+        padding: EdgeInsets.symmetric(horizontal: 10),
         itemCount: filtered.length,
         itemBuilder: (context, index) => ListTile(
           title: Text(
