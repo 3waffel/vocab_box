@@ -1,0 +1,103 @@
+name: "Build And Deploy Flutter App"
+
+on:
+  push:
+    branches:
+      - "main"
+    paths-ignore:
+      - "**.md"
+      - "doc/**"
+      - ".git/"
+      - ".vscode/"
+
+jobs:
+  version:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Get Latest Release Tag
+        id: latest_release
+        uses: "WyriHaximus/github-action-get-previous-tag@v1"
+        with:
+          prefix: "release/uat/"
+          fallback: 1.0.0
+
+      - name: Semantic Release
+        id: semantic
+        uses: cycjimmy/semantic-release-action@v3
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        with:
+          semantic_version: 19
+
+      - name: Calculate Next Version
+        id: next_version
+        run: |
+          last_version="${{ steps.latest_release.outputs.tag }}"
+          re="([^+]+)\+?([0-9]+)?"
+          build_number=$(echo "$last_version" | sed -E "s/$re/\2/")
+          ((build_number++)) || true
+          new_version="${{ steps.semantic.outputs.new_release_version }}"
+          if [ -z "$new_version" ]
+          then next_version=$(echo "$last_version" | sed -E "s/$re/\1/")
+          else next_version=$new_version; fi
+          echo "next_version=$next_version+$build_number" >> $GITHUB_OUTPUT
+
+      - name: Create New Release Tag
+        uses: rickstaa/action-create-tag@v1
+        with:
+          tag: "release/uat/${{ steps.next_version.outputs.next_version }}"
+          message: "UAT release ${{ steps.next_version.outputs.next_version }}"
+
+  build:
+    needs: version
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: ["ubuntu-latest", "windows-latest"]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        if: runner.os == 'Linux'
+        uses: actions/setup-java@v4
+        with:
+          distribution: "temurin"
+          java-version: "19"
+          cache: "gradle"
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: "stable"
+          cache: true
+
+      - name: Edit pubspec version
+        run: |
+          sed -Ei "s/^version: (.*)/version: ${{ needs.version.outputs.next_version }}/" pubspec.yaml
+
+      - name: Install Dependencies
+        run: flutter pub get
+
+      - name: Build Android Release
+        if: runner.os == 'Linux'
+        run: flutter build apk --split-per-abi
+      - name: Upload Android Artifacts
+        if: runner.os == 'Linux'
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-release
+          path: build/app/outputs/apk/release/*.apk
+
+      - name: Build Windows Release
+        if: runner.os == 'Windows'
+        run: flutter build windows
+      - name: Upload Windows Artifacts
+        if: runner.os == 'Windows'
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-release
+          path: build/windows/x64/runner/Release
