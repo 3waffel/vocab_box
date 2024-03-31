@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqflite/sqflite.dart';
+import 'package:vocab_box/common/snackbar.dart';
 import 'package:vocab_box/deck_loader.dart';
 
 import 'package:vocab_box/screens/learning.dart';
@@ -29,11 +30,12 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   /// Sync deck_loader with database
+  /// TODO switch between different decks
   Future<void> _syncRecords() async {
     final database = await CardDatabase().database;
     final records = await database.query(CardDatabase.table);
+
     if (records.length == 0) {
-      // TODO switch between different decks
       final newCardList = await DeckLoader().loadDefaultDeck();
       for (final card in newCardList) {
         database.insert(
@@ -61,14 +63,8 @@ class _HomeScreenState extends State<HomeScreen> {
       ];
       DeckLoader().cardList = newCardList;
     }
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content:
-          Text("Sync Done", style: Theme.of(context).textTheme.labelMedium),
-      showCloseIcon: true,
-      closeIconColor: Theme.of(context).colorScheme.primary,
-      backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-    ));
     setState(() {});
+    SnackBarExt(context).fluidSnackBar("Sync Done");
   }
 
   /// Update database when exiting `LearningScreen`
@@ -89,14 +85,7 @@ class _HomeScreenState extends State<HomeScreen> {
         whereArgs: [card.id],
       );
     }
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content:
-          Text("Deck Updated", style: Theme.of(context).textTheme.labelMedium),
-      showCloseIcon: true,
-      closeIconColor: Theme.of(context).colorScheme.primary,
-      backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-    ));
-    if (mounted) setState(() {});
+    SnackBarExt(context).fluidSnackBar("Deck Updated");
   }
 
   @override

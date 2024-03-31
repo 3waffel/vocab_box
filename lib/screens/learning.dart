@@ -18,10 +18,12 @@ class LearningScreen extends StatefulWidget {
 class LearningScreenArguments {
   final int learningLimit;
   final int learningGroupCount;
+  final bool isRandom;
 
   LearningScreenArguments({
     this.learningLimit = 3,
     this.learningGroupCount = 20,
+    this.isRandom = true,
   });
 }
 
@@ -35,7 +37,7 @@ class _LearningScreenState extends State<LearningScreen> {
     super.initState();
   }
 
-  /// Move the first card to the end of the list and reset visibility
+  /// Move the first card to the end of the queue and reset visibility
   void _updateCard() {
     if (learningQueue.length != 0) {
       final first = learningQueue.removeFirst();
@@ -46,10 +48,13 @@ class _LearningScreenState extends State<LearningScreen> {
   }
 
   void _startNewGroup() {
-    DeckLoader().learningGroup = DeckLoader()
+    final available = DeckLoader()
         .cardList
-        .where((item) => item.correctTimes <= args.learningLimit)
-        .take(args.learningGroupCount);
+        .where((item) => item.correctTimes <= args.learningLimit);
+    DeckLoader().learningGroup = args.isRandom
+        ? available.sample(args.learningGroupCount)
+        : available.take(args.learningGroupCount);
+
     setState(() => learningQueue = Queue.from(DeckLoader().learningGroup));
   }
 
@@ -80,7 +85,7 @@ class _LearningScreenState extends State<LearningScreen> {
                     label: Text("Start a new group"),
                     onPressed: _startNewGroup,
                   ),
-                )
+                ),
               ],
             ),
           ),
