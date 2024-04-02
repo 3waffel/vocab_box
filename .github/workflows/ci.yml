@@ -13,9 +13,13 @@ on:
 jobs:
   version:
     runs-on: ubuntu-latest
+    outputs:
+      next_version: ${{ steps.next_version.outputs.next_version }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Get Latest Release Tag
         id: latest_release
@@ -35,15 +39,18 @@ jobs:
       - name: Calculate Next Version
         id: next_version
         run: |
+          re="[^0-9]*([0-9]+)\.([0-9]+)\.([0-9]+)\+?([0-9]+)?"
           last_version="${{ steps.latest_release.outputs.tag }}"
-          re="([^+]+)\+?([0-9]+)?"
-          build_number=$(echo "$last_version" | sed -E "s/$re/\2/")
-          ((build_number++)) || true
           new_version="${{ steps.semantic.outputs.new_release_version }}"
           if [ -z "$new_version" ]
-          then next_version=$(echo "$last_version" | sed -E "s/$re/\1/")
+          then next_version=$last_version
           else next_version=$new_version; fi
-          echo "next_version=$next_version+$build_number" >> $GITHUB_OUTPUT
+          major=$(echo "$next_version" | sed -E "s/$re/\1/")
+          minor=$(echo "$next_version" | sed -E "s/$re/\2/")
+          patch=$(echo "$next_version" | sed -E "s/$re/\3/")
+          build=$(echo "$last_version" | sed -E "s/$re/\4/")
+          ((build++)) || true
+          echo "next_version=$major.$minor.$patch+$build" >> $GITHUB_OUTPUT
 
       - name: Create New Release Tag
         uses: rickstaa/action-create-tag@v1
@@ -84,7 +91,7 @@ jobs:
 
       - name: Build Android Release
         if: runner.os == 'Linux'
-        run: flutter build apk --split-per-abi
+        run: flutter build apk
       - name: Upload Android Artifacts
         if: runner.os == 'Linux'
         uses: actions/upload-artifact@v4

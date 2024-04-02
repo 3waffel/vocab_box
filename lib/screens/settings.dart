@@ -1,7 +1,23 @@
 import 'package:flutter/material.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
-class SettingsScreen extends StatelessWidget {
+class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
+
+  @override
+  State<StatefulWidget> createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends State<SettingsScreen> {
+  static PackageInfo? packageInfo;
+
+  @override
+  void initState() {
+    super.initState();
+    PackageInfo.fromPlatform()
+        .then((value) => setState(() => packageInfo = value));
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -11,11 +27,13 @@ class SettingsScreen extends StatelessWidget {
       body: ListView(
         padding: EdgeInsets.all(16),
         children: [
-          ListTile(
-            title: ElevatedButton(
-              child: Text("placeholder"),
-              onPressed: () {},
-            ),
+          AboutListTile(
+            icon: Icon(Icons.info),
+            child: Text("About"),
+            applicationName: packageInfo?.appName,
+            applicationVersion: packageInfo != null
+                ? "${packageInfo!.version}+${packageInfo!.buildNumber}"
+                : null,
           )
         ],
       ),
