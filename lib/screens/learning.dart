@@ -2,10 +2,10 @@ import 'dart:collection';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 import 'package:step_progress_indicator/step_progress_indicator.dart';
-import 'package:vocab_box/deck_loader.dart';
+import 'package:vocab_box/card_database.dart';
 import 'package:vocab_box/models/card.dart';
+import 'package:vocab_box/common/snackbar.dart';
 import 'package:collection/collection.dart';
 
 class LearningScreen extends StatefulWidget {
@@ -16,46 +16,80 @@ class LearningScreen extends StatefulWidget {
 }
 
 class LearningScreenArguments {
+  final String deckName;
   final int learningLimit;
   final int learningGroupCount;
   final bool isRandom;
 
   LearningScreenArguments({
+    this.deckName = CardDatabase.table,
     this.learningLimit = 3,
     this.learningGroupCount = 20,
     this.isRandom = true,
   });
 }
 
+enum _Choice {
+  Forget,
+  Know,
+  Skip,
+}
+
 class _LearningScreenState extends State<LearningScreen> {
-  Queue<CardModel> learningQueue = Queue.from(DeckLoader().learningGroup);
+  Queue<CardModel> learningQueue = Queue();
   LearningScreenArguments args = LearningScreenArguments();
   bool isVisible = false;
 
   @override
   void initState() {
     super.initState();
+    _loadLearning();
+  }
+
+  Future<void> _loadLearning() async {
+    final maps = await CardDatabase().getLearningFromTable(args.deckName);
+    final learningGroup = CardModel.fromMapList(maps);
+    if (args.isRandom) learningGroup.shuffle();
+    setState(() => learningQueue = Queue.from(learningGroup));
   }
 
   /// Move the first card to the end of the queue and reset visibility
-  void _updateCard() {
+  void _updateCard(_Choice choice) {
     if (learningQueue.length != 0) {
       final first = learningQueue.removeFirst();
+      switch (choice) {
+        case _Choice.Forget:
+          first.correctTimes = 0;
+        case _Choice.Know:
+          first.correctTimes += 1;
+        case _Choice.Skip:
+      }
       learningQueue.addLast(first);
-      DeckLoader().learningGroup = learningQueue;
     }
     setState(() => isVisible = false);
   }
 
-  void _startNewGroup() {
-    final available = DeckLoader()
-        .cardList
-        .where((item) => item.correctTimes <= args.learningLimit);
-    DeckLoader().learningGroup = args.isRandom
+  Future<void> _startNewGroup() async {
+    final maps = await CardDatabase().getTable(args.deckName);
+    final cardList = CardModel.fromMapList(maps);
+    final available =
+        cardList.where((item) => item.correctTimes <= args.learningLimit);
+
+    final learningGroup = args.isRandom
         ? available.sample(args.learningGroupCount)
         : available.take(args.learningGroupCount);
+    learningGroup.forEach((item) => item.isLearning = true);
 
-    setState(() => learningQueue = Queue.from(DeckLoader().learningGroup));
+    setState(() => learningQueue = Queue.from(learningGroup));
+  }
+
+  /// update deck when exiting learning screen
+  Future<void> _updateDeck() async {
+    await CardDatabase().updateMany(
+      cardList: learningQueue,
+      table: args.deckName,
+    );
+    SnackBarExt(context).fluidSnackBar("Deck Updated");
   }
 
   @override
@@ -68,7 +102,13 @@ class _LearningScreenState extends State<LearningScreen> {
         .firstWhereOrNull((item) => item.correctTimes <= args.learningLimit);
 
     return Scaffold(
-      appBar: AppBar(title: Text("Learning")),
+      appBar: AppBar(
+        title: Text("Learning"),
+        leading: BackButton(onPressed: () async {
+          await _updateDeck();
+          Navigator.pop(context);
+        }),
+      ),
       body: switch (card) {
         null => Center(
             child: Column(
@@ -108,16 +148,16 @@ class _LearningScreenState extends State<LearningScreen> {
                   Padding(
                       padding: EdgeInsets.only(top: 32),
                       child: Text(
-                        card.word,
+                        card.frontTitle,
                         style: TextStyle(fontSize: 32, color: card.color),
                       )),
                   Padding(
                       padding: EdgeInsets.only(top: 32),
-                      child: Text(card.example)),
+                      child: Text(card.frontSubtitle)),
                   Padding(
                       padding: EdgeInsets.only(top: 32),
                       child: Visibility(
-                        child: Text(card.meaning),
+                        child: Text(card.backTitle),
                         maintainAnimation: true,
                         maintainSize: true,
                         maintainState: true,
@@ -139,37 +179,27 @@ class _LearningScreenState extends State<LearningScreen> {
             Padding(
               padding: EdgeInsets.symmetric(horizontal: 6),
               child: IconButton.filledTonal(
-                onPressed: () {
-                  card?.correctTimes = 0;
-                  _updateCard();
-                },
+                onPressed: () => _updateCard(_Choice.Forget),
                 icon: Icon(Icons.close),
               ),
             ),
             Padding(
               padding: EdgeInsets.symmetric(horizontal: 6),
               child: IconButton.filledTonal(
-                onPressed: () {
-                  card?.correctTimes += 1;
-                  _updateCard();
-                },
+                onPressed: () => _updateCard(_Choice.Know),
                 icon: Icon(Icons.done),
               ),
             ),
             Padding(
               padding: EdgeInsets.symmetric(horizontal: 6),
               child: IconButton.filledTonal(
-                onPressed: () {
-                  _updateCard();
-                },
+                onPressed: () => _updateCard(_Choice.Skip),
                 icon: Icon(Icons.skip_next),
               ),
             ),
           ],
         ),
       ),
-      // persistentFooterAlignment: AlignmentDirectional.center,
-      // persistentFooterButtons:
     );
   }
 }

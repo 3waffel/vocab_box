@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:vocab_box/deck_loader.dart';
+import 'package:vocab_box/card_database.dart';
 import 'package:vocab_box/models/card.dart';
 
 /// TODO implement lazy load
@@ -11,39 +11,77 @@ class BrowserScreen extends StatefulWidget {
 }
 
 class _BrowserScreenState extends State<BrowserScreen> {
+  List<String> deckNameList = [];
+  String? selectedDeck;
+  List<CardModel> cardList = [];
   List<CardModel> filtered = [];
 
   @override
   void initState() {
     super.initState();
-    filtered = DeckLoader().cardList;
+    _initDeckNameList();
+  }
+
+  Future<void> _initDeckNameList() async {
+    final tables = await CardDatabase().getTableNameList();
+    setState(() => deckNameList = tables);
+  }
+
+  Future<void> _loadDeck() async {
+    if (selectedDeck != null) {
+      final maps = await CardDatabase().getTable(selectedDeck!);
+      setState(() {
+        cardList = CardModel.fromMapList(maps);
+        filtered = cardList;
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final cardList = DeckLoader().cardList;
     return Scaffold(
       appBar: AppBar(title: Text("Browser")),
       bottomSheet: Padding(
           padding: EdgeInsets.all(16),
-          child: TextField(
-            onChanged: (value) {
-              setState(() => filtered =
-                  cardList.where((item) => item.word.contains(value)).toList());
-            },
-            decoration: InputDecoration(
-              prefixIcon: Icon(Icons.search),
-            ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              DropdownButtonHideUnderline(
+                child: DropdownButton(
+                  padding: EdgeInsets.symmetric(horizontal: 8),
+                  value: selectedDeck,
+                  items: deckNameList
+                      .map((item) =>
+                          DropdownMenuItem(value: item, child: Text(item)))
+                      .toList(),
+                  onChanged: (value) {
+                    setState(() => selectedDeck = value);
+                    _loadDeck();
+                  },
+                ),
+              ),
+              SizedBox(
+                  width: 180,
+                  child: TextField(
+                      onChanged: (value) {
+                        setState(() => filtered = cardList
+                            .where((item) => item.frontTitle.contains(value))
+                            .toList());
+                      },
+                      decoration:
+                          InputDecoration(prefixIcon: Icon(Icons.search)))),
+            ],
           )),
       body: ListView.builder(
         padding: EdgeInsets.symmetric(horizontal: 10),
         itemCount: filtered.length,
         itemBuilder: (context, index) => ListTile(
           title: Text(
-            filtered[index].word,
+            filtered[index].frontTitle,
             style: TextStyle(color: filtered[index].color),
           ),
-          subtitle: Text("${filtered[index].meaning}"),
+          subtitle: Text("${filtered[index].backTitle}"),
           onTap: () => Navigator.push(
             context,
             MaterialPageRoute(
@@ -64,13 +102,14 @@ class DetailScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(card.word, style: TextStyle(color: card.color)),
+        title: Text(card.frontTitle, style: TextStyle(color: card.color)),
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          ListTile(title: Text(card.meaning, style: TextStyle(fontSize: 16))),
-          ListTile(title: Text(card.example, style: TextStyle(fontSize: 16))),
+          ListTile(title: Text(card.backTitle, style: TextStyle(fontSize: 16))),
+          ListTile(
+              title: Text(card.frontSubtitle, style: TextStyle(fontSize: 16))),
           ListTile(
             title: Text(
               "Correct Times: ${card.correctTimes.toString()}",
