@@ -10,6 +10,7 @@ import 'package:collection/collection.dart';
 
 class LearningScreen extends StatefulWidget {
   const LearningScreen({super.key});
+  static const String id = "/learning";
 
   @override
   State<StatefulWidget> createState() => _LearningScreenState();
@@ -36,35 +37,39 @@ enum _Choice {
 }
 
 class _LearningScreenState extends State<LearningScreen> {
-  Queue<CardModel> learningQueue = Queue();
+  static List<CardModel> learningList = [];
   LearningScreenArguments args = LearningScreenArguments();
   bool isVisible = false;
 
   @override
   void initState() {
     super.initState();
-    _loadLearning();
+    if (learningList.isEmpty) {
+      _loadLearning();
+    }
   }
 
   Future<void> _loadLearning() async {
     final maps = await CardDatabase().getLearningFromTable(args.deckName);
     final learningGroup = CardModel.fromMapList(maps);
     if (args.isRandom) learningGroup.shuffle();
-    setState(() => learningQueue = Queue.from(learningGroup));
+    setState(() => learningList = List.from(learningGroup));
   }
 
   /// Move the first card to the end of the queue and reset visibility
   void _updateCard(_Choice choice) {
-    if (learningQueue.length != 0) {
-      final first = learningQueue.removeFirst();
+    if (learningList.length != 0) {
+      final first = learningList.removeAt(0);
       switch (choice) {
         case _Choice.Forget:
           first.correctTimes = 0;
+          learningList.insert(min(5, learningList.length - 1), first);
         case _Choice.Know:
           first.correctTimes += 1;
+          learningList.insert(min(10, learningList.length - 1), first);
         case _Choice.Skip:
+          learningList.add(first);
       }
-      learningQueue.addLast(first);
     }
     setState(() => isVisible = false);
   }
@@ -80,13 +85,13 @@ class _LearningScreenState extends State<LearningScreen> {
         : available.take(args.learningGroupCount);
     learningGroup.forEach((item) => item.isLearning = true);
 
-    setState(() => learningQueue = Queue.from(learningGroup));
+    setState(() => learningList = List.from(learningGroup));
   }
 
   /// update deck when exiting learning screen
   Future<void> _updateDeck() async {
     await CardDatabase().updateMany(
-      cardList: learningQueue,
+      cardList: learningList,
       table: args.deckName,
     );
     SnackBarExt(context).fluidSnackBar("Deck Updated");
@@ -98,7 +103,7 @@ class _LearningScreenState extends State<LearningScreen> {
     if (ctxArgs != null && ctxArgs is LearningScreenArguments) {
       args = ctxArgs;
     }
-    final card = learningQueue
+    final card = learningList
         .firstWhereOrNull((item) => item.correctTimes <= args.learningLimit);
 
     return Scaffold(

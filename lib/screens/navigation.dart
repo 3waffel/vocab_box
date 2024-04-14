@@ -5,6 +5,7 @@ import 'package:vocab_box/screens/settings.dart';
 
 class NavigationScreen extends StatefulWidget {
   const NavigationScreen({super.key});
+  static const String id = "/navigation";
 
   @override
   State<StatefulWidget> createState() => _NavigationScreenState();
@@ -14,7 +15,7 @@ class Destination {
   final String label;
   final Widget icon;
   final Widget selectedIcon;
-  final Widget screen;
+  final Widget Function(BuildContext) screen;
 
   const Destination(
     this.label,
@@ -44,25 +45,25 @@ class _NavigationScreenState extends State<NavigationScreen> {
       "Home",
       Icon(Icons.home_outlined),
       Icon(Icons.home),
-      HomeScreen(),
+      (context) => HomeScreen(),
     ),
     Destination(
       "Browser",
       Icon(Icons.book_outlined),
       Icon(Icons.book),
-      BrowserScreen(),
+      (context) => BrowserScreen(),
     ),
     Destination(
       "Settings",
       Icon(Icons.settings_outlined),
       Icon(Icons.settings),
-      SettingsScreen(),
+      (context) => SettingsScreen(),
     ),
   ];
 
   Widget buildBottomBarScaffold() {
     return Scaffold(
-      body: destinations[screenIndex].screen,
+      body: Builder(builder: destinations[screenIndex].screen),
       bottomNavigationBar: NavigationBar(
         selectedIndex: screenIndex,
         onDestinationSelected: (index) => setState(() => screenIndex = index),
@@ -102,7 +103,7 @@ class _NavigationScreenState extends State<NavigationScreen> {
               ),
             ),
             const VerticalDivider(thickness: 1, width: 1),
-            Expanded(child: destinations[screenIndex].screen)
+            Expanded(child: Builder(builder: destinations[screenIndex].screen))
           ],
         ),
       ),

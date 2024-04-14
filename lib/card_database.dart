@@ -1,7 +1,7 @@
 import 'dart:io';
 
 import 'package:path/path.dart';
-import 'package:path_provider/path_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:vocab_box/deck_loader.dart';
 import 'package:vocab_box/models/card.dart';
@@ -21,17 +21,18 @@ class CardDatabase {
     if (_database != null) {
       return _database!;
     }
-    _database = await _initDatabase();
+    _database = await _openDatabase(await databasePath);
     return _database!;
   }
 
   Future<String> get databasePath async {
-    final documentsDirectory = await getApplicationDocumentsDirectory();
-    return join(documentsDirectory.path, _databaseName);
+    final prefs = await SharedPreferences.getInstance();
+    final persistedDir = prefs.getString('persistedStoragePath')!;
+    final path = join(persistedDir, _databaseName);
+    return path;
   }
 
-  Future<Database> _initDatabase() async {
-    final path = await databasePath;
+  Future<Database> _openDatabase(String path) async {
     if (Platform.isWindows || Platform.isLinux) {
       sqfliteFfiInit();
       final databaseFactory = databaseFactoryFfi;

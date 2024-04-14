@@ -8,6 +8,7 @@ import 'package:vocab_box/card_database.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+  static const String id = "/home";
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -28,15 +29,19 @@ class _DeckStatus {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  List<_DeckStatus> deckStatusList = [];
+  static List<_DeckStatus> deckStatusList = [];
 
   @override
   void initState() {
     super.initState();
-    _initDeckStatusList();
+    if (deckStatusList.isEmpty) {
+      _initDeckStatusList();
+    }
   }
 
+  /// Sync all tables
   Future<void> _initDeckStatusList() async {
+    List<_DeckStatus> newDeckStatusList = [];
     final tables = await CardDatabase().getTableNameList();
     for (final deckName in tables) {
       final maps = await CardDatabase().getTable(deckName);
@@ -45,16 +50,17 @@ class _HomeScreenState extends State<HomeScreen> {
       final completeCount =
           cardList.where((item) => item.correctTimes > 3).length;
       final learningCount = cardList.where((item) => item.isLearning).length;
-      deckStatusList.add(_DeckStatus(
+      newDeckStatusList.add(_DeckStatus(
           deckName: deckName,
           deckCount: deckCount,
           completeCount: completeCount,
           learningCount: learningCount));
     }
-    if (mounted) setState(() {});
+    setState(() => deckStatusList = newDeckStatusList);
+    SnackBarExt(context).fluidSnackBar("Sync Done");
   }
 
-  /// Sync deck status with database
+  /// Sync single deck
   Future<void> _syncStatus(int index) async {
     final deckName = deckStatusList[index].deckName;
     final maps = await CardDatabase().getTable(deckName);
@@ -63,14 +69,14 @@ class _HomeScreenState extends State<HomeScreen> {
     final completeCount =
         cardList.where((item) => item.correctTimes > 3).length;
     final learningCount = cardList.where((item) => item.isLearning).length;
-    deckStatusList[index] = _DeckStatus(
-        deckName: deckName,
-        deckCount: deckCount,
-        completeCount: completeCount,
-        learningCount: learningCount);
-
-    setState(() {});
-    SnackBarExt(context).fluidSnackBar("Sync Done");
+    setState(() {
+      deckStatusList[index] = _DeckStatus(
+          deckName: deckName,
+          deckCount: deckCount,
+          completeCount: completeCount,
+          learningCount: learningCount);
+    });
+    SnackBarExt(context).fluidSnackBar("Sync Done: ${deckName}");
   }
 
   Widget _buildDeckSection({child}) {
@@ -91,6 +97,10 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: Text("Home")),
+      floatingActionButton: IconButton.filledTonal(
+        icon: Icon(Icons.sync),
+        onPressed: _initDeckStatusList,
+      ),
       body: ListView.builder(
         itemCount: deckStatusList.length,
         itemBuilder: (context, index) {

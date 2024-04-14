@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-
 import 'package:vocab_box/screens/navigation.dart';
+import 'package:vocab_box/screens/start.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -14,12 +14,18 @@ class App extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Vocab Box',
-      home: NavigationScreen(),
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
-            seedColor: Colors.deepPurple, brightness: Brightness.dark),
+          seedColor: Colors.deepPurple,
+          brightness: Brightness.dark,
+        ),
         useMaterial3: true,
       ),
+      initialRoute: StartScreen.id,
+      routes: {
+        StartScreen.id: (context) => StartScreen(),
+        NavigationScreen.id: (context) => NavigationScreen(),
+      },
     );
   }
 }

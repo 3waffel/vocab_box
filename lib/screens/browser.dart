@@ -5,13 +5,14 @@ import 'package:vocab_box/models/card.dart';
 /// TODO implement lazy load
 class BrowserScreen extends StatefulWidget {
   const BrowserScreen({super.key});
+  static const String id = "/browser";
 
   @override
   State<StatefulWidget> createState() => _BrowserScreenState();
 }
 
 class _BrowserScreenState extends State<BrowserScreen> {
-  List<String> deckNameList = [];
+  static List<String> deckNameList = [];
   String? selectedDeck;
   List<CardModel> cardList = [];
   List<CardModel> filtered = [];
