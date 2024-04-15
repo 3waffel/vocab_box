@@ -6,6 +6,8 @@ A card memorizing tool, simple and clean to use
 
 ### Generating Icons
 
+Set icon at `assets/icon.png`, then:
+
 ```
 dart run flutter_launcher_icons
 ```

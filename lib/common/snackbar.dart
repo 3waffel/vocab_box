@@ -6,7 +6,7 @@ extension SnackBarExt on BuildContext {
       ..hideCurrentSnackBar()
       ..showSnackBar(SnackBar(
         content: Text(message, style: Theme.of(this).textTheme.labelMedium),
-        duration: Duration(seconds: 1),
+        duration: Duration(seconds: 2),
         behavior: SnackBarBehavior.floating,
         showCloseIcon: true,
         closeIconColor: Theme.of(this).colorScheme.primary,
