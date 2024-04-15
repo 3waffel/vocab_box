@@ -1,9 +1,8 @@
-import 'dart:collection';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:step_progress_indicator/step_progress_indicator.dart';
-import 'package:vocab_box/card_database.dart';
+import 'package:vocab_box/common/card_database.dart';
 import 'package:vocab_box/models/card.dart';
 import 'package:vocab_box/common/snackbar.dart';
 import 'package:collection/collection.dart';
@@ -50,7 +49,7 @@ class _LearningScreenState extends State<LearningScreen> {
   }
 
   Future<void> _loadLearning() async {
-    final maps = await CardDatabase().getLearningFromTable(args.deckName);
+    final maps = await cardDatabase.getLearningFromTable(args.deckName);
     final learningGroup = CardModel.fromMapList(maps);
     if (args.isRandom) learningGroup.shuffle();
     setState(() => learningList = List.from(learningGroup));
@@ -75,7 +74,7 @@ class _LearningScreenState extends State<LearningScreen> {
   }
 
   Future<void> _startNewGroup() async {
-    final maps = await CardDatabase().getTable(args.deckName);
+    final maps = await cardDatabase.getTable(args.deckName);
     final cardList = CardModel.fromMapList(maps);
     final available =
         cardList.where((item) => item.correctTimes <= args.learningLimit);
@@ -90,7 +89,7 @@ class _LearningScreenState extends State<LearningScreen> {
 
   /// update deck when exiting learning screen
   Future<void> _updateDeck() async {
-    await CardDatabase().updateMany(
+    await cardDatabase.updateMany(
       cardList: learningList,
       table: args.deckName,
     );

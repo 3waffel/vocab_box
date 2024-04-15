@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:vocab_box/common/snackbar.dart';
+import 'package:vocab_box/screens/start.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -28,27 +28,29 @@ class _SettingsScreenState extends State<SettingsScreen> {
       body: ListView(
         padding: EdgeInsets.all(16),
         children: [
-          AboutListTile(
-            icon: Icon(Icons.info),
-            child: Text("About"),
-            applicationName: packageInfo?.appName,
-            applicationVersion: packageInfo != null
-                ? "${packageInfo!.version}+${packageInfo!.buildNumber}"
-                : null,
-            aboutBoxChildren: [
-              FutureBuilder(
-                  future: SharedPreferences.getInstance(),
-                  builder: (context, value) {
-                    final prefs = value.data;
-                    return Column(
-                        children: prefs
-                                ?.getKeys()
-                                .map((key) => Text(
-                                    "${key}: ${prefs.get(key).toString()}"))
-                                .toList() ??
-                            []);
-                  }),
-            ],
+          FutureBuilder(
+            future: SharedPreferences.getInstance(),
+            builder: (context, value) {
+              final prefs = value.data;
+              return AboutListTile(
+                  icon: Icon(Icons.info),
+                  child: Text("About"),
+                  applicationName: packageInfo?.appName,
+                  applicationVersion: packageInfo != null
+                      ? "${packageInfo!.version}+${packageInfo!.buildNumber}"
+                      : null,
+                  aboutBoxChildren: prefs
+                          ?.getKeys()
+                          .map((key) =>
+                              Text("${key}: ${prefs.get(key).toString()}"))
+                          .toList() ??
+                      []);
+            },
+          ),
+          ListTile(
+            leading: Icon(Icons.start),
+            title: Text("Back to Start Screen"),
+            onTap: () => Navigator.popAndPushNamed(context, StartScreen.id),
           ),
         ],
       ),
