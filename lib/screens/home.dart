@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:vocab_box/common/snackbar.dart';
 import 'package:vocab_box/screens/learning.dart';
 import 'package:vocab_box/models/card.dart';
-import 'package:vocab_box/card_database.dart';
+import 'package:vocab_box/common/card_database.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -42,9 +42,9 @@ class _HomeScreenState extends State<HomeScreen> {
   /// Sync all tables
   Future<void> _initDeckStatusList() async {
     List<_DeckStatus> newDeckStatusList = [];
-    final tables = await CardDatabase().getTableNameList();
+    final tables = await cardDatabase.getTableNameList();
     for (final deckName in tables) {
-      final maps = await CardDatabase().getTable(deckName);
+      final maps = await cardDatabase.getTable(deckName);
       final cardList = CardModel.fromMapList(maps);
       final deckCount = cardList.length;
       final completeCount =
@@ -63,7 +63,7 @@ class _HomeScreenState extends State<HomeScreen> {
   /// Sync single deck
   Future<void> _syncStatus(int index) async {
     final deckName = deckStatusList[index].deckName;
-    final maps = await CardDatabase().getTable(deckName);
+    final maps = await cardDatabase.getTable(deckName);
     final cardList = CardModel.fromMapList(maps);
     final deckCount = cardList.length;
     final completeCount =
