@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:vocab_box/card_database.dart';
+import 'package:vocab_box/common/card_database.dart';
 import 'package:vocab_box/models/card.dart';
 
 /// TODO implement lazy load
@@ -24,13 +24,13 @@ class _BrowserScreenState extends State<BrowserScreen> {
   }
 
   Future<void> _initDeckNameList() async {
-    final tables = await CardDatabase().getTableNameList();
+    final tables = await cardDatabase.getTableNameList();
     setState(() => deckNameList = tables);
   }
 
   Future<void> _loadDeck() async {
     if (selectedDeck != null) {
-      final maps = await CardDatabase().getTable(selectedDeck!);
+      final maps = await cardDatabase.getTable(selectedDeck!);
       setState(() {
         cardList = CardModel.fromMapList(maps);
         filtered = cardList;
