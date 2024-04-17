@@ -3,15 +3,31 @@ name: "Test Flutter App"
 on:
   workflow_dispatch:
   push:
-    branches:
-      dev
+    branches: dev
+    paths-ignore:
+      - "**.md"
+      - "doc/**"
+      - ".git/"
+      - ".vscode/"
 
 jobs:
   build:
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
-        os: ["ubuntu-latest"]
+        os: ["ubuntu-latest", "windows-latest"]
+        target: ["apk", "windows", "web"]
+        include:
+          - target: apk
+            path: build/app/outputs/apk/release/*.apk
+          - target: web
+            path: build/web
+          - target: windows
+            path: build/windows/x64/runner/Release
+        exclude:
+          - os: ubuntu-latest
+            target: windows
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -36,7 +52,7 @@ jobs:
           echo 'storeFile=${{ github.workspace }}/upload-keystore.jks' >> $KEY_PROPERTIES_PATH
 
       - name: Setup Java
-        if: runner.os == 'Linux'
+        if: matrix.target == 'apk'
         uses: actions/setup-java@v4
         with:
           distribution: "temurin"
@@ -56,6 +72,11 @@ jobs:
       - name: Install Dependencies
         run: flutter pub get
 
-      - name: Build Android Release
-        if: runner.os == 'Linux'
-        run: flutter build apk
+      - name: Build ${{ matrix.target }}
+        run: flutter build ${{ matrix.target }}
+
+      - name: Upload ${{ matrix.target }} Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.os }}_${{ matrix.target }}
+          path: ${{ matrix.path }}

@@ -2,7 +2,8 @@
   "ci": true,
   "dryRun": true,
   "branches": [
-    "main"
+    "main",
+    "dev"
   ],
   "tagFormat": "release/uat/${version}",
   "plugins": [

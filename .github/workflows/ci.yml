@@ -1,14 +1,14 @@
 name: "Build And Deploy Flutter App"
 
 on:
-  push:
-    branches:
-      - "main"
-    paths-ignore:
-      - "**.md"
-      - "doc/**"
-      - ".git/"
-      - ".vscode/"
+  workflow_dispatch:
+    inputs:
+      deploy-page:
+        type: boolean
+        default: true
+      create-release:
+        type: boolean
+        default: true
 
 jobs:
   version:
@@ -52,20 +52,19 @@ jobs:
           ((build++)) || true
           echo "next_version=$major.$minor.$patch+$build" >> $GITHUB_OUTPUT
 
-      - name: Create New Release Tag
-        uses: rickstaa/action-create-tag@v1
-        with:
-          tag: "release/uat/${{ steps.next_version.outputs.next_version }}"
-          message: "UAT release ${{ steps.next_version.outputs.next_version }}"
-
   build:
     needs: version
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        # os: ["ubuntu-latest", "windows-latest"]
         os: ["ubuntu-latest"]
+        target: ["apk", "web"]
+        include:
+          - target: apk
+            path: build/app/outputs/apk/release/*.apk
+          - target: web
+            path: build/web
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -94,7 +93,7 @@ jobs:
           sed -Ei "s/^version: (.*)/version: ${{ needs.version.outputs.next_version }}/" pubspec.yaml
 
       - name: Setup Java
-        if: runner.os == 'Linux'
+        if: matrix.target == 'apk'
         uses: actions/setup-java@v4
         with:
           distribution: "temurin"
@@ -110,22 +109,59 @@ jobs:
       - name: Install Dependencies
         run: flutter pub get
 
-      - name: Build Android Release
-        if: runner.os == 'Linux'
-        run: flutter build apk
-      - name: Upload Android Artifacts
-        if: runner.os == 'Linux'
-        uses: actions/upload-artifact@v4
-        with:
-          name: android-release
-          path: build/app/outputs/apk/release/*.apk
+      - name: Build ${{ matrix.target }} Release
+        run: flutter build ${{ matrix.target }}
 
-      - name: Build Windows Release
-        if: runner.os == 'Windows'
-        run: flutter build windows
-      - name: Upload Windows Artifacts
-        if: runner.os == 'Windows'
+      - name: Upload ${{ matrix.target }} Artifacts
+        if: matrix.target == 'apk'
         uses: actions/upload-artifact@v4
         with:
-          name: windows-release
-          path: build/windows/x64/runner/Release
+          name: ${{ matrix.os }}_${{ matrix.target }}
+          path: ${{ matrix.path }}
+
+      - name: Create Archive
+        if: matrix.target != 'apk'
+        run: |
+          tar -czvf ${{ matrix.os }}_${{ matrix.target }}-release.tgz ${{ matrix.path }}
+
+      - name: Upload Archive
+        if: matrix.target != 'apk'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.os }}_${{ matrix.target }}
+          path: ${{ matrix.os }}_${{ matrix.target }}-release.tgz
+
+      - name: Deploy Web
+        if: matrix.target == 'web' && github.event.inputs.deploy-page
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ github.token }}
+          publish_dir: ${{ matrix.path }}
+          publish_branch: gh-pages_${{ matrix.os }}
+
+  release:
+    needs: [version, build]
+    if: github.event.inputs.create-release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Create Tag
+        if: github.event.inputs.create-release
+        uses: rickstaa/action-create-tag@v1
+        with:
+          tag: "release/uat/${{ needs.version.outputs.next_version }}"
+          message: "UAT release ${{ needs.version.outputs.next_version }}"
+
+      - name: Create Release
+        if: github.event.inputs.create-release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: "release/uat/${{ needs.version.outputs.next_version }}"
+          files: artifacts/**/*
