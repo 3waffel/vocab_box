@@ -27,18 +27,17 @@ class _StartScreenState extends State<StartScreen> {
 
   _setupStore() async {
     final prefs = await SharedPreferences.getInstance();
-    final path = prefs.getString('persistedStoragePath');
-    if (path == null) {
+    if (!prefs.containsKey('persistedStoragePath')) {
       try {
         final appDocDir = await getApplicationDocumentsDirectory();
         prefs.setString('persistedStoragePath', appDocDir.path);
+        cardDatabase = LocalDatabase();
+        Navigator.popAndPushNamed(context, NavigationScreen.id);
       } catch (e) {
         SnackBarExt(context).fluidSnackBar("Failed to set up store");
         rethrow;
       }
-    }
-    final _path = prefs.getString('persistedStoragePath');
-    if (_path != null) {
+    } else {
       cardDatabase = LocalDatabase();
       Navigator.popAndPushNamed(context, NavigationScreen.id);
     }
@@ -99,7 +98,10 @@ class _StartScreenState extends State<StartScreen> {
                       return ElevatedButton.icon(
                         icon: Icon(Icons.login),
                         label: Text("Sign in with GitHub"),
-                        onPressed: _setupAuth,
+                        onPressed: (!kIsWeb &&
+                                defaultTargetPlatform == TargetPlatform.windows)
+                            ? null
+                            : _setupAuth,
                       );
                     } else {
                       return ElevatedButton.icon(
@@ -114,10 +116,6 @@ class _StartScreenState extends State<StartScreen> {
                       );
                     }
                   }),
-                  Icon(Icons.android,
-                      color: Theme.of(context).colorScheme.primary),
-                  Icon(Icons.web,
-                      color: Theme.of(context).colorScheme.primary),
                 ]),
             Padding(
               padding: EdgeInsets.only(top: 32),
@@ -128,12 +126,8 @@ class _StartScreenState extends State<StartScreen> {
                     ElevatedButton.icon(
                       icon: Icon(Icons.storage),
                       label: Text("Start with local database"),
-                      onPressed: _setupStore,
+                      onPressed: (kIsWeb) ? null : _setupStore,
                     ),
-                    Icon(Icons.android,
-                        color: Theme.of(context).colorScheme.primary),
-                    Icon(Icons.window,
-                        color: Theme.of(context).colorScheme.primary),
                   ]),
             ),
           ],

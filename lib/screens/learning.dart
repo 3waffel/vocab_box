@@ -37,6 +37,7 @@ enum _Choice {
 
 class _LearningScreenState extends State<LearningScreen> {
   static List<CardModel> learningList = [];
+  List<CardModel> learningSublist = List.from(learningList);
   LearningScreenArguments args = LearningScreenArguments();
   bool isVisible = false;
 
@@ -44,31 +45,42 @@ class _LearningScreenState extends State<LearningScreen> {
   void initState() {
     super.initState();
     if (learningList.isEmpty) {
-      _loadLearning();
+      _initializeLearning();
     }
   }
 
-  Future<void> _loadLearning() async {
+  Future<void> _initializeLearning() async {
     final maps = await cardDatabase.getLearningFromTable(args.deckName);
     final learningGroup = CardModel.fromMapList(maps);
     if (args.isRandom) learningGroup.shuffle();
-    setState(() => learningList = List.from(learningGroup));
+
+    learningList = List.from(learningGroup);
+    setState(() => learningSublist = List.from(learningList));
   }
 
   /// Move the first card to the end of the queue and reset visibility
-  void _updateCard(_Choice choice) {
-    if (learningList.length != 0) {
-      final first = learningList.removeAt(0);
+  void _updateLearning(_Choice choice) {
+    final first = learningSublist.firstOrNull;
+    if (first != null) {
+      learningSublist.remove(first);
+      final end = max(0, learningSublist.length - 1);
+      final newIndex;
       switch (choice) {
         case _Choice.Forget:
           first.correctTimes = 0;
-          learningList.insert(min(5, learningList.length - 1), first);
+          newIndex = min(5, end);
         case _Choice.Know:
           first.correctTimes += 1;
-          learningList.insert(min(10, learningList.length - 1), first);
+          if (first.correctTimes > args.learningLimit) {
+            first.isLearning = false;
+            return setState(() => isVisible = false);
+          } else {
+            newIndex = min(10, end);
+          }
         case _Choice.Skip:
-          learningList.add(first);
+          newIndex = end;
       }
+      learningSublist.insert(newIndex, first);
     }
     setState(() => isVisible = false);
   }
@@ -84,7 +96,8 @@ class _LearningScreenState extends State<LearningScreen> {
         : available.take(args.learningGroupCount);
     learningGroup.forEach((item) => item.isLearning = true);
 
-    setState(() => learningList = List.from(learningGroup));
+    learningList = List.from(learningGroup);
+    setState(() => learningSublist = List.from(learningList));
   }
 
   /// update deck when exiting learning screen
@@ -93,7 +106,75 @@ class _LearningScreenState extends State<LearningScreen> {
       cardList: learningList,
       table: args.deckName,
     );
+    learningList = learningSublist;
     SnackBarExt(context).fluidSnackBar("Deck Updated");
+  }
+
+  Widget _buildFinished() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            "Finished",
+            style: Theme.of(context).textTheme.headlineLarge,
+          ),
+          Padding(
+            padding: EdgeInsets.symmetric(vertical: 16),
+            child: ElevatedButton.icon(
+              icon: Icon(Icons.add),
+              label: Text("Start a new group"),
+              onPressed: _startNewGroup,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLearning(CardModel card) {
+    return InkWell(
+      child: Center(
+        child: Column(
+          children: [
+            Padding(
+                padding: EdgeInsets.only(top: 32),
+                child: SizedBox(
+                  width: min(100, args.learningLimit * 20),
+                  child: StepProgressIndicator(
+                    currentStep: card.correctTimes,
+                    totalSteps: args.learningLimit,
+                    selectedColor: Theme.of(context).colorScheme.primary,
+                    unselectedColor:
+                        Theme.of(context).colorScheme.inversePrimary,
+                  ),
+                )),
+            Padding(
+                padding: EdgeInsets.only(top: 32),
+                child: Text(
+                  card.frontTitle,
+                  style: TextStyle(fontSize: 32, color: card.color),
+                )),
+            Padding(
+                padding: EdgeInsets.only(top: 32),
+                child: Text(card.frontSubtitle)),
+            Padding(
+                padding: EdgeInsets.only(top: 32),
+                child: Visibility(
+                  child: Text(card.backTitle),
+                  maintainAnimation: true,
+                  maintainSize: true,
+                  maintainState: true,
+                  visible: isVisible,
+                ))
+          ],
+        ),
+      ),
+      onTap: () => setState(() => isVisible = !isVisible),
+      splashColor: Colors.transparent,
+      highlightColor: Colors.transparent,
+      enableFeedback: false,
+    );
   }
 
   @override
@@ -102,108 +183,40 @@ class _LearningScreenState extends State<LearningScreen> {
     if (ctxArgs != null && ctxArgs is LearningScreenArguments) {
       args = ctxArgs;
     }
-    final card = learningList
-        .firstWhereOrNull((item) => item.correctTimes <= args.learningLimit);
+    final card = learningSublist.firstOrNull;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text("Learning"),
-        leading: BackButton(onPressed: () async {
-          await _updateDeck();
-          Navigator.pop(context);
-        }),
-      ),
-      body: switch (card) {
-        null => Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
+    return PopScope(
+        onPopInvoked: (value) async => await _updateDeck(),
+        child: Scaffold(
+          appBar: AppBar(title: Text("Learning")),
+          body: switch (card) {
+            null => _buildFinished(),
+            CardModel card => _buildLearning(card),
+          },
+          bottomNavigationBar: BottomAppBar(
+            child: Wrap(
+              alignment: WrapAlignment.center,
+              runAlignment: WrapAlignment.center,
+              spacing: 20,
               children: [
-                Text(
-                  "Finished",
-                  style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
+                IconButton.filledTonal(
+                  padding: EdgeInsets.symmetric(horizontal: 20),
+                  onPressed: () => _updateLearning(_Choice.Forget),
+                  icon: Icon(Icons.close),
                 ),
-                Padding(
-                  padding: EdgeInsets.symmetric(vertical: 16),
-                  child: ElevatedButton.icon(
-                    icon: Icon(Icons.add),
-                    label: Text("Start a new group"),
-                    onPressed: _startNewGroup,
-                  ),
+                IconButton.filledTonal(
+                  padding: EdgeInsets.symmetric(horizontal: 20),
+                  onPressed: () => _updateLearning(_Choice.Know),
+                  icon: Icon(Icons.done),
+                ),
+                IconButton.filledTonal(
+                  padding: EdgeInsets.symmetric(horizontal: 20),
+                  onPressed: () => _updateLearning(_Choice.Skip),
+                  icon: Icon(Icons.skip_next),
                 ),
               ],
             ),
           ),
-        CardModel card => InkWell(
-            child: Center(
-              child: Column(
-                children: [
-                  Padding(
-                      padding: EdgeInsets.only(top: 32),
-                      child: SizedBox(
-                        width: min(100, args.learningLimit * 20),
-                        child: StepProgressIndicator(
-                          currentStep: card.correctTimes,
-                          totalSteps: args.learningLimit,
-                          selectedColor: Theme.of(context).colorScheme.primary,
-                          unselectedColor:
-                              Theme.of(context).colorScheme.inversePrimary,
-                        ),
-                      )),
-                  Padding(
-                      padding: EdgeInsets.only(top: 32),
-                      child: Text(
-                        card.frontTitle,
-                        style: TextStyle(fontSize: 32, color: card.color),
-                      )),
-                  Padding(
-                      padding: EdgeInsets.only(top: 32),
-                      child: Text(card.frontSubtitle)),
-                  Padding(
-                      padding: EdgeInsets.only(top: 32),
-                      child: Visibility(
-                        child: Text(card.backTitle),
-                        maintainAnimation: true,
-                        maintainSize: true,
-                        maintainState: true,
-                        visible: isVisible,
-                      ))
-                ],
-              ),
-            ),
-            onTap: () => setState(() => isVisible = !isVisible),
-            splashColor: Colors.transparent,
-            highlightColor: Colors.transparent,
-            enableFeedback: false,
-          ),
-      },
-      bottomNavigationBar: BottomAppBar(
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Padding(
-              padding: EdgeInsets.symmetric(horizontal: 6),
-              child: IconButton.filledTonal(
-                onPressed: () => _updateCard(_Choice.Forget),
-                icon: Icon(Icons.close),
-              ),
-            ),
-            Padding(
-              padding: EdgeInsets.symmetric(horizontal: 6),
-              child: IconButton.filledTonal(
-                onPressed: () => _updateCard(_Choice.Know),
-                icon: Icon(Icons.done),
-              ),
-            ),
-            Padding(
-              padding: EdgeInsets.symmetric(horizontal: 6),
-              child: IconButton.filledTonal(
-                onPressed: () => _updateCard(_Choice.Skip),
-                icon: Icon(Icons.skip_next),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
+        ));
   }
 }
