@@ -10,6 +10,10 @@ on:
       - ".git/"
       - ".vscode/"
 
+defaults:
+  run:
+    shell: bash
+
 jobs:
   build:
     runs-on: ${{ matrix.os }}
@@ -40,16 +44,16 @@ jobs:
         run: |
           echo $FIREBASE_OPTIONS_DART | base64 --decode > lib/firebase_options.dart
           echo $GOOGLE_SERVICES_JSON | base64 --decode > android/app/google-services.json
-          echo $KEYSTORE_BASE64 | base64 --decode > upload-keystore.jks
+          echo $KEYSTORE_BASE64 | base64 --decode > android/app/upload-keystore.jks
 
       - name: Create key.properties
         env:
-          KEY_PROPERTIES_PATH: ${{ github.workspace }}/android/key.properties
+          KEY_PROPERTIES_PATH: android/key.properties
         run: |
           echo 'storePassword=${{ secrets.KEYSTORE_PASSWORD }}' > $KEY_PROPERTIES_PATH
           echo 'keyPassword=${{ secrets.KEYSTORE_KEY_PASSWORD }}' >> $KEY_PROPERTIES_PATH
           echo 'keyAlias=${{ secrets.KEYSTORE_KEY_ALIAS }}' >> $KEY_PROPERTIES_PATH
-          echo 'storeFile=${{ github.workspace }}/upload-keystore.jks' >> $KEY_PROPERTIES_PATH
+          echo 'storeFile=upload-keystore.jks' >> $KEY_PROPERTIES_PATH
 
       - name: Setup Java
         if: matrix.target == 'apk'

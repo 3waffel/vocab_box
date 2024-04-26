@@ -31,7 +31,7 @@ dart run flutterfire_cli:flutterfire configure
 ### Test Locally 
 
 ```
-act -W .github/workflows/test.yml --secret-file .secrets
+act -W .github/workflows/test.yml --secret-file .secrets -P windows-latest=-self-hosted
 ```
 
 ## Notice
