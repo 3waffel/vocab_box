@@ -80,16 +80,18 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildDeckSection({child}) {
-    return Container(
-      width: 400,
-      padding: EdgeInsets.all(16),
-      margin: EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Theme.of(context).hoverColor,
-        border: Border.all(color: Theme.of(context).highlightColor),
-        borderRadius: BorderRadius.circular(8),
+    return Align(
+      child: Container(
+        constraints: BoxConstraints(minWidth: 400, maxWidth: 500),
+        padding: EdgeInsets.all(16),
+        margin: EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Theme.of(context).hoverColor,
+          border: Border.all(color: Theme.of(context).highlightColor),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: child,
       ),
-      child: child,
     );
   }
 
@@ -108,63 +110,65 @@ class _HomeScreenState extends State<HomeScreen> {
           final deckCount = deckStatusList[index].deckCount;
           final completeCount = deckStatusList[index].completeCount;
           final learningCount = deckStatusList[index].learningCount;
+
+          final deckInfoRow = Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text("${deckName}",
+                  style: Theme.of(context).textTheme.titleMedium),
+              Text(
+                "${deckCount.toString()} in total",
+                style: Theme.of(context).textTheme.labelLarge,
+              ),
+              ElevatedButton.icon(
+                icon: Icon(Icons.sync),
+                label: Text("Sync"),
+                onPressed: () => _syncStatus(index),
+              ),
+            ],
+          );
+          final progressBarRow = LinearProgressIndicator(
+            value: (completeCount / deckCount),
+            minHeight: 6,
+          );
+          final learningInfoRow = Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Wrap(
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  Text(
+                    "Learning ${learningCount.toString()}",
+                    style: Theme.of(context).textTheme.labelLarge,
+                  ),
+                ],
+              ),
+              ElevatedButton.icon(
+                icon: Icon(Icons.inbox),
+                label: Text("Start"),
+                onPressed: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const LearningScreen(),
+                    settings: RouteSettings(
+                      arguments: LearningScreenArguments(deckName: deckName),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          );
+
           return _buildDeckSection(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                deckInfoRow,
                 Padding(
-                  padding: EdgeInsets.only(bottom: 8),
-                  child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text("${deckName}",
-                            style: Theme.of(context).textTheme.titleMedium),
-                        Text(
-                          "${deckCount.toString()} in total",
-                          style: Theme.of(context).textTheme.labelLarge,
-                        ),
-                        ElevatedButton.icon(
-                          icon: Icon(Icons.sync),
-                          label: Text("Sync"),
-                          onPressed: () => _syncStatus(index),
-                        ),
-                      ]),
+                  padding: EdgeInsets.symmetric(vertical: 10),
+                  child: progressBarRow,
                 ),
-                LinearProgressIndicator(
-                  value: (completeCount / deckCount),
-                  minHeight: 6,
-                ),
-                Padding(
-                  padding: EdgeInsets.only(top: 8),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Wrap(
-                        crossAxisAlignment: WrapCrossAlignment.center,
-                        children: [
-                          Text(
-                            "Learning ${learningCount.toString()}",
-                            style: Theme.of(context).textTheme.labelLarge,
-                          ),
-                        ],
-                      ),
-                      ElevatedButton.icon(
-                        icon: Icon(Icons.inbox),
-                        label: Text("Start"),
-                        onPressed: () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const LearningScreen(),
-                            settings: RouteSettings(
-                              arguments:
-                                  LearningScreenArguments(deckName: deckName),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                learningInfoRow
               ],
             ),
           );
