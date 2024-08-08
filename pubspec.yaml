@@ -22,6 +22,8 @@ dependencies:
   firebase_core: ^2.29.0
   cloud_firestore: ^4.16.1
   firebase_auth: ^4.19.1
+  file_picker: ^8.0.5
+  win32: ^5.5.3
 
 dev_dependencies:
   flutter_test:

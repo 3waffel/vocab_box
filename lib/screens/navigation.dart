@@ -37,7 +37,7 @@ class _NavigationScreenState extends State<NavigationScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    showNavigationDrawer = MediaQuery.of(context).size.width >= 450;
+    showNavigationDrawer = MediaQuery.of(context).size.width >= 600;
   }
 
   final destinations = <Destination>[

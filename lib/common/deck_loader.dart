@@ -9,15 +9,19 @@ class DeckLoader {
 
   static const String bundledDeckPath = 'assets/word_list_a1.txt';
 
-  Future<List<CardModel>> loadFromFile({
+  Future<List<CardModel>> loadFromAsset({
     String path = bundledDeckPath,
   }) async {
     final rawString = await rootBundle.loadString(path);
+    return loadFromString(rawString);
+  }
+
+  List<CardModel> loadFromString(String content) {
     final fields = CsvToListConverter(
       fieldDelimiter: '\t',
       eol: '\n',
       convertEmptyTo: '',
-    ).convert(rawString);
+    ).convert(content);
 
     return List.generate(
       fields.length,

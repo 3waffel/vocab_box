@@ -5,7 +5,9 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:vocab_box/common/card_database.dart';
+import 'package:vocab_box/common/database/card_database.dart';
+import 'package:vocab_box/common/database/firebase_database.dart';
+import 'package:vocab_box/common/database/local_database.dart';
 import 'package:vocab_box/common/snackbar.dart';
 import 'package:vocab_box/screens/navigation.dart';
 

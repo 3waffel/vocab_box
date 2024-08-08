@@ -1,5 +1,3 @@
-import 'package:flutter/material.dart';
-
 class CardModel {
   int id;
   final String frontTitle;
@@ -7,7 +5,6 @@ class CardModel {
   final String backTitle;
   int correctTimes = 0;
   bool isLearning = false;
-  Color color = Colors.white70;
 
   static String get fields {
     return '''
@@ -38,20 +35,11 @@ class CardModel {
     required this.backTitle,
     this.correctTimes = 0,
     this.isLearning = false,
-  }) {
-    switch (frontTitle.split(' ')[0]) {
-      case 'der':
-        color = Colors.blueAccent;
-      case 'das':
-        color = Colors.greenAccent;
-      case 'die':
-        color = Colors.redAccent;
-    }
-  }
+  });
 
   @override
   String toString() {
-    return '$frontTitle|$frontSubtitle|$backTitle|$correctTimes';
+    return '$frontTitle | $frontSubtitle | $backTitle';
   }
 
   static List<CardModel> fromMapList(List<Map<String, Object?>> maps) {

@@ -2,9 +2,8 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:step_progress_indicator/step_progress_indicator.dart';
-import 'package:vocab_box/common/card_database.dart';
+import 'package:vocab_box/common/database/card_database.dart';
 import 'package:vocab_box/models/card.dart';
-import 'package:vocab_box/common/snackbar.dart';
 import 'package:collection/collection.dart';
 
 class LearningScreen extends StatefulWidget {
@@ -22,7 +21,7 @@ class LearningScreenArguments {
   final bool isRandom;
 
   LearningScreenArguments({
-    this.deckName = CardDatabase.table,
+    required this.deckName,
     this.learningLimit = 3,
     this.learningGroupCount = 20,
     this.isRandom = true,
@@ -38,13 +37,22 @@ enum _Choice {
 class _LearningScreenState extends State<LearningScreen> {
   static List<CardModel> learningList = [];
   List<CardModel> learningSublist = List.from(learningList);
-  LearningScreenArguments args = LearningScreenArguments();
+  late LearningScreenArguments args;
   bool isVisible = false;
 
   @override
   void initState() {
     super.initState();
-    if (learningList.isEmpty) {
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final ctxArgs = ModalRoute.of(context)!.settings.arguments;
+    if (ctxArgs != null && ctxArgs is LearningScreenArguments) {
+      args = ctxArgs;
+    }
+    if (learningSublist.isEmpty) {
       _initializeLearning();
     }
   }
@@ -107,7 +115,6 @@ class _LearningScreenState extends State<LearningScreen> {
       table: args.deckName,
     );
     learningList = learningSublist;
-    SnackBarExt(context).fluidSnackBar("Deck Updated");
   }
 
   Widget _buildFinished() {
@@ -133,6 +140,16 @@ class _LearningScreenState extends State<LearningScreen> {
   }
 
   Widget _buildLearning(CardModel card) {
+    Color cardColor = Colors.white70;
+    switch (card.frontTitle.split(' ')[0]) {
+      case 'der':
+        cardColor = Colors.blueAccent;
+      case 'das':
+        cardColor = Colors.greenAccent;
+      case 'die':
+        cardColor = Colors.redAccent;
+    }
+
     return InkWell(
       child: Center(
         child: Column(
@@ -153,7 +170,7 @@ class _LearningScreenState extends State<LearningScreen> {
                 padding: EdgeInsets.only(top: 32),
                 child: Text(
                   card.frontTitle,
-                  style: TextStyle(fontSize: 32, color: card.color),
+                  style: TextStyle(fontSize: 32, color: cardColor),
                 )),
             Padding(
                 padding: EdgeInsets.only(top: 32),
@@ -179,14 +196,10 @@ class _LearningScreenState extends State<LearningScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final ctxArgs = ModalRoute.of(context)!.settings.arguments;
-    if (ctxArgs != null && ctxArgs is LearningScreenArguments) {
-      args = ctxArgs;
-    }
     final card = learningSublist.firstOrNull;
 
     return PopScope(
-        onPopInvoked: (value) async => await _updateDeck(),
+        onPopInvoked: (value) => _updateDeck(),
         child: Scaffold(
           appBar: AppBar(title: Text("Learning")),
           body: switch (card) {
