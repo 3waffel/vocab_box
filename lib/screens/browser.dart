@@ -42,7 +42,7 @@ class _BrowserScreenState extends State<BrowserScreen> {
   Widget _buildSearchBar() {
     return Container(
       decoration: BoxDecoration(
-          color: Colors.white10,
+          color: Theme.of(context).colorScheme.onSecondary,
           borderRadius: BorderRadius.all(Radius.circular(10))),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -92,8 +92,8 @@ class _BrowserScreenState extends State<BrowserScreen> {
     return Scaffold(
       appBar: AppBar(title: Text("Browser")),
       floatingActionButton: AnimatedSize(
-        curve: Curves.bounceInOut,
-        duration: const Duration(milliseconds: 200),
+        curve: Curves.decelerate,
+        duration: const Duration(milliseconds: 100),
         child: isSearchBarActive
             ? _buildSearchBar()
             : IconButton.filledTonal(

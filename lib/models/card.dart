@@ -1,21 +1,28 @@
+enum CardField {
+  id(sqlType: "INTEGER PRIMARY KEY"),
+  frontTitle(sqlType: "TEXT"),
+  frontSubtitle(sqlType: "TEXT"),
+  backTitle(sqlType: "TEXT"),
+  correctTimes(sqlType: "INTEGER"),
+  isLearning(sqlType: "INTEGER");
+
+  final String sqlType;
+
+  static String get fields =>
+      CardField.values.map((e) => "${e.name} ${e.sqlType}").join(", ");
+
+  const CardField({
+    required this.sqlType,
+  });
+}
+
 class CardModel {
-  int id;
+  final int id;
   final String frontTitle;
   final String frontSubtitle;
   final String backTitle;
   int correctTimes = 0;
   bool isLearning = false;
-
-  static String get fields {
-    return '''
-      id INTEGER PRIMARY KEY,
-      frontTitle TEXT,
-      frontSubtitle TEXT,
-      backTitle TEXT,
-      correctTimes INTEGER,
-      isLearning INTEGER
-    ''';
-  }
 
   Map<String, Object?> toMap() {
     return {
@@ -39,7 +46,7 @@ class CardModel {
 
   @override
   String toString() {
-    return '$frontTitle | $frontSubtitle | $backTitle';
+    return '$id | $frontTitle | $frontSubtitle | $backTitle';
   }
 
   static List<CardModel> fromMapList(List<Map<String, Object?>> maps) {

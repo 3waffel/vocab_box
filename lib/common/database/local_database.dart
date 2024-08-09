@@ -53,9 +53,7 @@ class LocalDatabase implements CardDatabase {
 
   Future<void> _createDatabase(Database db, int version) async {
     await db.execute('''
-      CREATE TABLE IF NOT EXISTS $table (
-        ${CardModel.fields}
-      )
+      CREATE TABLE IF NOT EXISTS $table (${CardField.fields})
     ''');
     final cardList = await DeckLoader().loadFromAsset();
     for (final card in cardList) {
@@ -70,9 +68,7 @@ class LocalDatabase implements CardDatabase {
   Future<void> createTable(String table) async {
     final db = await database;
     await db.execute('''
-      CREATE TABLE IF NOT EXISTS $table (
-        ${CardModel.fields}
-      )
+      CREATE TABLE IF NOT EXISTS $table (${CardField.fields})
     ''');
   }
 
@@ -90,7 +86,8 @@ class LocalDatabase implements CardDatabase {
 
   Future<List<Map<String, Object?>>> getLearningFromTable(String table) async {
     final db = await database;
-    return await db.query(table, where: 'isLearning = ?', whereArgs: [1]);
+    return await db.query(table,
+        where: '${CardField.isLearning.name} = ?', whereArgs: [1]);
   }
 
   Future<List<String>> getTableNameList() async {
@@ -128,7 +125,7 @@ class LocalDatabase implements CardDatabase {
       await db.update(
         table,
         card.toMap(),
-        where: 'id = ?',
+        where: '${CardField.id.name} = ?',
         whereArgs: [card.id],
       );
     }
