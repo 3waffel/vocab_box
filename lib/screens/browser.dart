@@ -70,7 +70,9 @@ class _BrowserScreenState extends State<BrowserScreen> {
             child: TextField(
               onChanged: (value) {
                 setState(() => filtered = cardList
-                    .where((item) => item.frontTitle.contains(value))
+                    .where((item) =>
+                        (item.fields[CardField.frontTitle] as String)
+                            .contains(value))
                     .toList());
               },
               decoration: InputDecoration(
@@ -104,8 +106,13 @@ class _BrowserScreenState extends State<BrowserScreen> {
           padding: EdgeInsets.symmetric(horizontal: 10),
           itemCount: filtered.length,
           itemBuilder: (context, index) {
+            var frontTitle =
+                filtered[index].fields[CardField.frontTitle] as String;
+            var backTitle =
+                filtered[index].fields[CardField.backTitle] as String;
+
             Color cardColor = Colors.white70;
-            switch (filtered[index].frontTitle.split(' ')[0]) {
+            switch (frontTitle.split(' ')[0]) {
               case 'der':
                 cardColor = Colors.blueAccent;
               case 'das':
@@ -116,10 +123,10 @@ class _BrowserScreenState extends State<BrowserScreen> {
 
             return ListTile(
               title: Text(
-                filtered[index].frontTitle,
+                frontTitle,
                 style: TextStyle(color: cardColor),
               ),
-              subtitle: Text("${filtered[index].backTitle}"),
+              subtitle: Text("${backTitle}"),
               onTap: () => Navigator.push(
                 context,
                 MaterialPageRoute(
@@ -146,25 +153,25 @@ class DetailScreen extends StatelessWidget {
           ListTile(
             contentPadding: EdgeInsets.symmetric(horizontal: 10),
             title: Text(
-              card.frontTitle,
+              card.fields[CardField.frontTitle] as String,
               style: Theme.of(context).textTheme.headlineSmall,
             ),
           ),
           ListTile(
             title: Text(
-              card.backTitle,
+              card.fields[CardField.backTitle] as String,
               style: Theme.of(context).textTheme.bodyLarge,
             ),
           ),
           ListTile(
             title: Text(
-              card.frontSubtitle,
+              card.fields[CardField.frontSubtitle] as String,
               style: Theme.of(context).textTheme.bodyMedium,
             ),
           ),
           ListTile(
             title: Text(
-              "Correct Times: ${card.correctTimes.toString()}",
+              "Correct Times: ${card.fields[CardField.correctTimes].toString()}",
               style: Theme.of(context).textTheme.labelMedium,
             ),
           ),

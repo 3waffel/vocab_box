@@ -40,7 +40,9 @@ class FireBaseDatabase implements CardDatabase {
       );
       final cardList = await DeckLoader().loadFromAsset();
       for (var card in cardList) {
-        await tableRef.doc(card.id.toString()).set(card.toMap());
+        await tableRef
+            .doc(card.fields[CardField.id].toString())
+            .set(card.toMap());
       }
     }
     return dbRef;
@@ -105,7 +107,10 @@ class FireBaseDatabase implements CardDatabase {
   }) async {
     final db = await database;
     for (var item in cardList) {
-      await db.collection(table).doc(item.id.toString()).set(item.toMap());
+      await db
+          .collection(table)
+          .doc(item.fields[CardField.id].toString())
+          .set(item.toMap());
     }
   }
 
@@ -115,7 +120,10 @@ class FireBaseDatabase implements CardDatabase {
   }) async {
     final db = await database;
     for (var item in cardList) {
-      await db.collection(table).doc(item.id.toString()).set(item.toMap());
+      await db
+          .collection(table)
+          .doc(item.fields[CardField.id].toString())
+          .set(item.toMap());
     }
   }
 }

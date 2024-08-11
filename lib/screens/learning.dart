@@ -57,6 +57,12 @@ class _LearningScreenState extends State<LearningScreen> {
     }
   }
 
+  @override
+  void dispose() {
+    learningSublist.clear();
+    super.dispose();
+  }
+
   Future<void> _initializeLearning() async {
     final maps = await cardDatabase.getLearningFromTable(args.deckName);
     final learningGroup = CardModel.fromMapList(maps);
@@ -75,12 +81,16 @@ class _LearningScreenState extends State<LearningScreen> {
       final newIndex;
       switch (choice) {
         case _Choice.Forget:
-          first.correctTimes = 0;
+          first.fields[CardField.correctTimes] = 0;
           newIndex = min(5, end);
         case _Choice.Know:
-          first.correctTimes += 1;
-          if (first.correctTimes > args.learningLimit) {
-            first.isLearning = false;
+          first.fields.update(
+            CardField.correctTimes,
+            (value) => (value as int) + 1,
+          );
+          if (first.fields[CardField.correctTimes] as int >
+              args.learningLimit) {
+            first.fields[CardField.isLearning] = 0;
             return setState(() => isVisible = false);
           } else {
             newIndex = min(10, end);
@@ -96,13 +106,13 @@ class _LearningScreenState extends State<LearningScreen> {
   Future<void> _startNewGroup() async {
     final maps = await cardDatabase.getTable(args.deckName);
     final cardList = CardModel.fromMapList(maps);
-    final available =
-        cardList.where((item) => item.correctTimes <= args.learningLimit);
+    final available = cardList.where((item) =>
+        item.fields[CardField.correctTimes] as int <= args.learningLimit);
 
     final learningGroup = args.isRandom
         ? available.sample(args.learningGroupCount)
         : available.take(args.learningGroupCount);
-    learningGroup.forEach((item) => item.isLearning = true);
+    learningGroup.forEach((item) => item.fields[CardField.isLearning] = 1);
 
     learningList = List.from(learningGroup);
     setState(() => learningSublist = List.from(learningList));
@@ -141,7 +151,7 @@ class _LearningScreenState extends State<LearningScreen> {
 
   Widget _buildLearning(CardModel card) {
     Color cardColor = Colors.white70;
-    switch (card.frontTitle.split(' ')[0]) {
+    switch (card.fields[CardField.frontTitle].toString().split(' ')[0]) {
       case 'der':
         cardColor = Colors.blueAccent;
       case 'das':
@@ -159,7 +169,7 @@ class _LearningScreenState extends State<LearningScreen> {
                 child: SizedBox(
                   width: min(100, args.learningLimit * 20),
                   child: StepProgressIndicator(
-                    currentStep: card.correctTimes,
+                    currentStep: card.fields[CardField.correctTimes] as int,
                     totalSteps: args.learningLimit,
                     selectedColor: Theme.of(context).colorScheme.primary,
                     unselectedColor:
@@ -169,16 +179,16 @@ class _LearningScreenState extends State<LearningScreen> {
             Padding(
                 padding: EdgeInsets.only(top: 32),
                 child: Text(
-                  card.frontTitle,
+                  card.fields[CardField.frontTitle] as String,
                   style: TextStyle(fontSize: 32, color: cardColor),
                 )),
             Padding(
                 padding: EdgeInsets.only(top: 32),
-                child: Text(card.frontSubtitle)),
+                child: Text(card.fields[CardField.frontSubtitle] as String)),
             Padding(
                 padding: EdgeInsets.only(top: 32),
                 child: Visibility(
-                  child: Text(card.backTitle),
+                  child: Text(card.fields[CardField.backTitle] as String),
                   maintainAnimation: true,
                   maintainSize: true,
                   maintainState: true,
@@ -199,7 +209,7 @@ class _LearningScreenState extends State<LearningScreen> {
     final card = learningSublist.firstOrNull;
 
     return PopScope(
-        onPopInvoked: (value) => _updateDeck(),
+        onPopInvokedWithResult: (flag, value) => _updateDeck(),
         child: Scaffold(
           appBar: AppBar(title: Text("Learning")),
           body: switch (card) {

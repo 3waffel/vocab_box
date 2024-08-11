@@ -31,28 +31,18 @@ class DeckLoader {
 
     final List<CardField> _columns = columns ?? CardField.values;
 
-    assert(_columns.toSet().containsAll({
-      CardField.frontTitle,
-      CardField.frontSubtitle,
-      CardField.backTitle,
-    }));
-
     return List.generate(
       fields.length,
       (index) {
-        var _id = _columns.contains(CardField.id)
-            ? fields[index][_columns.indexOf(CardField.id)]
-            : index + 1;
-        return CardModel(
-          id: _id is int ? _id : index + 1,
-          frontTitle:
-              fields[index][_columns.indexOf(CardField.frontTitle)].toString(),
-          frontSubtitle: fields[index]
-                  [_columns.indexOf(CardField.frontSubtitle)]
-              .toString(),
-          backTitle:
-              fields[index][_columns.indexOf(CardField.backTitle)].toString(),
-        );
+        Map<String, Object?> map = {};
+        for (var field in CardField.values) {
+          int fieldIndex = _columns.indexOf(field);
+          if (fieldIndex != -1) {
+            var fieldValue = fields[index][fieldIndex];
+            map.putIfAbsent(field.name, () => fieldValue);
+          }
+        }
+        return CardModel.fromMap(map);
       },
     );
   }

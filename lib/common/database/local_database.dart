@@ -126,7 +126,7 @@ class LocalDatabase implements CardDatabase {
         table,
         card.toMap(),
         where: '${CardField.id.name} = ?',
-        whereArgs: [card.id],
+        whereArgs: [card.fields[CardField.id]],
       );
     }
   }

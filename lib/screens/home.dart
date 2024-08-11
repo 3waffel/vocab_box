@@ -40,6 +40,11 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
     if (deckStatusList.isEmpty) {
       _syncAllDeckStatus();
     }
@@ -53,17 +58,22 @@ class _HomeScreenState extends State<HomeScreen> {
       final maps = await cardDatabase.getTable(deckName);
       final cardList = CardModel.fromMapList(maps);
       final deckCount = cardList.length;
-      final completeCount =
-          cardList.where((item) => item.correctTimes > 3).length;
-      final learningCount = cardList.where((item) => item.isLearning).length;
+      final completeCount = cardList
+          .where((item) => item.fields[CardField.correctTimes] as int > 3)
+          .length;
+      final learningCount = cardList
+          .where((item) => item.fields[CardField.isLearning] == 1)
+          .length;
       newDeckStatusList.add(_DeckStatus(
           deckName: deckName,
           deckCount: deckCount,
           completeCount: completeCount,
           learningCount: learningCount));
     }
-    setState(() => deckStatusList = newDeckStatusList);
-    SnackBarExt(context).fluidSnackBar("Sync All Done");
+    if (!listEquals(deckStatusList, newDeckStatusList)) {
+      setState(() => deckStatusList = newDeckStatusList);
+      SnackBarExt(context).fluidSnackBar("Sync All Done");
+    }
   }
 
   /// Sync single deck
@@ -76,9 +86,11 @@ class _HomeScreenState extends State<HomeScreen> {
     final maps = await cardDatabase.getTable(deckName);
     final cardList = CardModel.fromMapList(maps);
     final deckCount = cardList.length;
-    final completeCount =
-        cardList.where((item) => item.correctTimes > 3).length;
-    final learningCount = cardList.where((item) => item.isLearning).length;
+    final completeCount = cardList
+        .where((item) => item.fields[CardField.correctTimes] as int > 3)
+        .length;
+    final learningCount =
+        cardList.where((item) => item.fields[CardField.isLearning] == 1).length;
     setState(() {
       deckStatusList[index] = _DeckStatus(
           deckName: deckName,
@@ -231,16 +243,12 @@ class _DeckImportForm extends StatefulWidget {
 
 class _DeckImportFormState extends State<_DeckImportForm> {
   int currentStep = 0;
-  TextEditingController deckNameController = TextEditingController();
   String? fileContent;
+  TextEditingController deckNameController = TextEditingController();
+  TextEditingController cardListController = TextEditingController();
 
   (String, String, String) converterFormat = ('\t', '\n', '');
-  List<CardField> columns = [
-    CardField.id,
-    CardField.frontTitle,
-    CardField.frontSubtitle,
-    CardField.backTitle,
-  ];
+  List<CardField> columns = List.from(CardField.values);
   List<CardModel>? cardList;
 
   final _formKeys = <GlobalKey<FormState>>[
@@ -288,7 +296,10 @@ class _DeckImportFormState extends State<_DeckImportForm> {
         throw Exception(
             "Deck size exceeds limitation: " + _cardList.length.toString());
       }
-      setState(() => cardList = _cardList);
+      setState(() {
+        cardList = _cardList;
+        cardListController.text = _cardList.first.toString();
+      });
     } catch (e) {
       SnackBarExt(context)
           .fluidSnackBar("Failed to load the deck: " + e.toString());
@@ -319,14 +330,6 @@ class _DeckImportFormState extends State<_DeckImportForm> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              FormField(
-                builder: (state) => TextButton(
-                  onPressed: _selectFile,
-                  child: state.isValid ? Text("Selected") : Text("Select File"),
-                ),
-                validator: (_) =>
-                    (fileContent == null) ? "Please select a file" : null,
-              ),
               TextFormField(
                 controller: deckNameController,
                 inputFormatters: [
@@ -335,9 +338,25 @@ class _DeckImportFormState extends State<_DeckImportForm> {
                 onFieldSubmitted: (value) =>
                     setState(() => deckNameController.text = value),
                 decoration: InputDecoration(labelText: "Deck Name"),
-                validator: (_) => (deckNameController.text.isEmpty)
-                    ? "Please enter deck name"
-                    : null,
+                validator: (_) {
+                  if (deckNameController.text.isEmpty) {
+                    return "Please enter deck name";
+                  } else if (fileContent == null) {
+                    return "Please select a file";
+                  } else if (deckNameController.text
+                      .startsWith(RegExp(r"[0-9]"))) {
+                    return "Illegal table name";
+                  } else {
+                    return null;
+                  }
+                },
+              ),
+              Padding(
+                padding: EdgeInsets.symmetric(vertical: 10),
+                child: TextButton(
+                  onPressed: _selectFile,
+                  child: Text("Select File"),
+                ),
               ),
             ],
           ),
@@ -354,6 +373,7 @@ class _DeckImportFormState extends State<_DeckImportForm> {
         content: Form(
           key: _formKeys[1],
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               SizedBox(
                 height: 80,
@@ -361,15 +381,25 @@ class _DeckImportFormState extends State<_DeckImportForm> {
                 child: ReorderableListView(
                   shrinkWrap: true,
                   scrollDirection: Axis.horizontal,
-                  children: columns
-                      .map((e) => Container(
-                          decoration: BoxDecoration(
-                            border: Border.all(color: Colors.white30),
-                          ),
-                          key: Key(e.name),
-                          padding: EdgeInsets.all(20),
-                          child: Text(e.name)))
-                      .toList(),
+                  children: columns.map(
+                    (element) {
+                      var fieldContainer = Container(
+                        key: Key(element.name),
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.white30),
+                        ),
+                        padding: EdgeInsets.all(20),
+                        child: Text(element.name),
+                      );
+                      return Dismissible(
+                        key: Key(element.name),
+                        direction: DismissDirection.vertical,
+                        child: fieldContainer,
+                        onDismissed: (direction) =>
+                            setState(() => columns.remove(element)),
+                      );
+                    },
+                  ).toList(),
                   onReorder: (oldIndex, newIndex) => setState(() {
                     if (newIndex > columns.length) newIndex = columns.length;
                     if (oldIndex < newIndex) newIndex--;
@@ -377,8 +407,9 @@ class _DeckImportFormState extends State<_DeckImportForm> {
                   }),
                 ),
               ),
+              SizedBox(height: 20),
               DropdownButtonFormField(
-                hint: Text("Field Delimiter"),
+                decoration: InputDecoration(labelText: "Field Delimiter"),
                 value: '\t',
                 items: [
                   DropdownMenuItem(value: ',', child: Text("comma")),
@@ -390,22 +421,18 @@ class _DeckImportFormState extends State<_DeckImportForm> {
                   converterFormat.$3,
                 ),
               ),
-              FormField(
-                builder: (state) => Row(
-                  children: [
-                    TextButton(
-                      onPressed: _convertFile,
-                      child: Text("Load"),
-                    ),
-                    Flexible(
-                      child: state.isValid
-                          ? Text(cardList!.first.toString())
-                          : Text("Card list is not loaded"),
-                    ),
-                  ],
-                ),
+              SizedBox(height: 20),
+              TextFormField(
+                readOnly: true,
+                decoration: InputDecoration(labelText: "Card Example"),
+                maxLines: 3,
+                controller: cardListController,
                 validator: (_) =>
                     cardList == null ? "Card list is not loaded" : null,
+              ),
+              Padding(
+                padding: EdgeInsets.symmetric(vertical: 10),
+                child: TextButton(onPressed: _convertFile, child: Text("Load")),
               ),
             ],
           ),
@@ -420,19 +447,20 @@ class _DeckImportFormState extends State<_DeckImportForm> {
           _ => StepState.disabled,
         },
         content: Form(
-            key: _formKeys[2],
-            child: Wrap(
-              clipBehavior: Clip.hardEdge,
-              direction: Axis.vertical,
-              spacing: 10,
-              children: cardList == null
-                  ? []
-                  : [
-                      Text("deck name:\t" + deckNameController.text),
-                      Text("deck size:\t" + cardList!.length.toString()),
-                      Text(cardList!.first.toString()),
-                    ],
-            )),
+          key: _formKeys[2],
+          child: Wrap(
+            clipBehavior: Clip.hardEdge,
+            direction: Axis.vertical,
+            spacing: 20,
+            children: cardList == null
+                ? []
+                : [
+                    Text("deck name:\t" + deckNameController.text),
+                    Text("deck size:\t" + cardList!.length.toString()),
+                    Text(cardList!.first.toString()),
+                  ],
+          ),
+        ),
       ),
     ];
   }
@@ -440,6 +468,7 @@ class _DeckImportFormState extends State<_DeckImportForm> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(),
       body: Container(
         margin: EdgeInsets.all(8),
         child: Stepper(

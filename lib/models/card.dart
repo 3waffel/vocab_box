@@ -8,65 +8,54 @@ enum CardField {
 
   final String sqlType;
 
-  static String get fields =>
-      CardField.values.map((e) => "${e.name} ${e.sqlType}").join(", ");
-
   const CardField({
     required this.sqlType,
   });
+
+  static String get fields =>
+      CardField.values.map((e) => "${e.name} ${e.sqlType}").join(", ");
 }
 
 class CardModel {
-  final int id;
-  final String frontTitle;
-  final String frontSubtitle;
-  final String backTitle;
-  int correctTimes = 0;
-  bool isLearning = false;
+  Map<CardField, Object?> fields = {
+    CardField.id: 0,
+    CardField.frontTitle: "",
+    CardField.frontSubtitle: "",
+    CardField.backTitle: "",
+    CardField.correctTimes: 0,
+    CardField.isLearning: 0,
+  };
 
-  Map<String, Object?> toMap() {
-    return {
-      'id': id,
-      'frontTitle': frontTitle,
-      'frontSubtitle': frontSubtitle,
-      'backTitle': backTitle,
-      'correctTimes': correctTimes,
-      'isLearning': isLearning ? 1 : 0,
-    };
-  }
-
-  CardModel({
-    required this.id,
-    required this.frontTitle,
-    required this.frontSubtitle,
-    required this.backTitle,
-    this.correctTimes = 0,
-    this.isLearning = false,
-  });
+  CardModel();
 
   @override
   String toString() {
-    return '$id | $frontTitle | $frontSubtitle | $backTitle';
+    return fields.entries.fold(
+        "",
+        (prev, curr) =>
+            prev + curr.key.name + ": " + curr.value.toString() + "\n");
   }
 
+  Map<String, Object?> toMap() {
+    return fields.map((key, value) => MapEntry(key.name, value));
+  }
+
+  CardModel.fromMap(Map<String, Object?> map)
+      : fields = map.map((key, value) {
+          var newKey =
+              CardField.values.firstWhere((element) => element.name == key);
+          if (newKey.sqlType.startsWith("INTEGER")) {
+            int? parsed = int.tryParse(value.toString());
+            if (parsed != null) {
+              return MapEntry(newKey, parsed);
+            } else {
+              return MapEntry(newKey, 0);
+            }
+          }
+          return MapEntry(newKey, value.toString());
+        });
+
   static List<CardModel> fromMapList(List<Map<String, Object?>> maps) {
-    return [
-      for (final {
-            'id': id as int,
-            'frontTitle': frontTitle as String,
-            'frontSubtitle': frontSubtitle as String,
-            'backTitle': backTitle as String,
-            'correctTimes': correctTimes as int,
-            'isLearning': isLearning as int,
-          } in maps)
-        CardModel(
-          id: id,
-          frontTitle: frontTitle,
-          frontSubtitle: frontSubtitle,
-          backTitle: backTitle,
-          correctTimes: correctTimes,
-          isLearning: isLearning.isOdd,
-        )
-    ];
+    return [for (final map in maps) CardModel.fromMap(map)];
   }
 }
