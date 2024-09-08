@@ -105,12 +105,12 @@ class FireBaseDatabase implements CardDatabase {
     required Iterable<CardModel> cardList,
     required String table,
   }) async {
-    final db = await database;
-    for (var item in cardList) {
-      await db
-          .collection(table)
-          .doc(item.fields[CardField.id].toString())
-          .set(item.toMap());
+    final dbRef = await database;
+    final tableRef = dbRef.collection(table);
+    for (var card in cardList) {
+      await tableRef
+          .doc(card.fields[CardField.id].toString())
+          .set(card.toMap());
     }
   }
 
@@ -118,12 +118,12 @@ class FireBaseDatabase implements CardDatabase {
     required Iterable<CardModel> cardList,
     required String table,
   }) async {
-    final db = await database;
-    for (var item in cardList) {
-      await db
-          .collection(table)
-          .doc(item.fields[CardField.id].toString())
-          .set(item.toMap());
+    final dbRef = await database;
+    final tableRef = dbRef.collection(table);
+    for (var card in cardList) {
+      await tableRef
+          .doc(card.fields[CardField.id].toString())
+          .set(card.toMap());
     }
   }
 }

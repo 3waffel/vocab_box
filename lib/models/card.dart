@@ -40,20 +40,22 @@ class CardModel {
     return fields.map((key, value) => MapEntry(key.name, value));
   }
 
-  CardModel.fromMap(Map<String, Object?> map)
-      : fields = map.map((key, value) {
-          var newKey =
-              CardField.values.firstWhere((element) => element.name == key);
-          if (newKey.sqlType.startsWith("INTEGER")) {
-            int? parsed = int.tryParse(value.toString());
-            if (parsed != null) {
-              return MapEntry(newKey, parsed);
-            } else {
-              return MapEntry(newKey, 0);
-            }
-          }
-          return MapEntry(newKey, (value ?? "").toString());
-        });
+  CardModel.fromMap(Map<String, Object?> map) {
+    final _map = map.map((key, value) {
+      var newKey =
+          CardField.values.firstWhere((element) => element.name == key);
+      if (newKey.sqlType.startsWith("INTEGER")) {
+        int? parsed = int.tryParse(value.toString());
+        if (parsed != null) {
+          return MapEntry(newKey, parsed);
+        } else {
+          return MapEntry(newKey, 0);
+        }
+      }
+      return MapEntry(newKey, (value ?? "").toString());
+    });
+    fields.addAll(_map);
+  }
 
   static List<CardModel> fromMapList(List<Map<String, Object?>> maps) {
     return [for (final map in maps) CardModel.fromMap(map)];

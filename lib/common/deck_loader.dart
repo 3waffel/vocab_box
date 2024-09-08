@@ -42,6 +42,7 @@ class DeckLoader {
             map.putIfAbsent(field.name, () => fieldValue);
           }
         }
+        map.putIfAbsent(CardField.id.name, () => index);
         return CardModel.fromMap(map);
       },
     );
