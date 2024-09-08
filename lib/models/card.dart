@@ -52,7 +52,7 @@ class CardModel {
               return MapEntry(newKey, 0);
             }
           }
-          return MapEntry(newKey, value.toString());
+          return MapEntry(newKey, (value ?? "").toString());
         });
 
   static List<CardModel> fromMapList(List<Map<String, Object?>> maps) {

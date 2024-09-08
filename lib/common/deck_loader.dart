@@ -38,7 +38,7 @@ class DeckLoader {
         for (var field in CardField.values) {
           int fieldIndex = _columns.indexOf(field);
           if (fieldIndex != -1) {
-            var fieldValue = fields[index][fieldIndex];
+            var fieldValue = fields[index].elementAtOrNull(fieldIndex);
             map.putIfAbsent(field.name, () => fieldValue);
           }
         }

@@ -161,46 +161,55 @@ class _LearningScreenState extends State<LearningScreen> {
     }
 
     return InkWell(
+      onTap: () => setState(() => isVisible = !isVisible),
+      highlightColor: Colors.transparent,
+      hoverColor: Colors.transparent,
+      splashColor: Colors.transparent,
       child: Center(
         child: Column(
           children: [
             Padding(
-                padding: EdgeInsets.only(top: 32),
-                child: SizedBox(
-                  width: min(100, args.learningLimit * 20),
-                  child: StepProgressIndicator(
-                    currentStep: card.fields[CardField.correctTimes] as int,
-                    totalSteps: args.learningLimit,
-                    selectedColor: Theme.of(context).colorScheme.primary,
-                    unselectedColor:
-                        Theme.of(context).colorScheme.inversePrimary,
-                  ),
-                )),
+              padding: EdgeInsets.only(top: 32),
+              child: SizedBox(
+                width: min(100, args.learningLimit * 20),
+                child: StepProgressIndicator(
+                  currentStep: card.fields[CardField.correctTimes] as int,
+                  totalSteps: args.learningLimit,
+                  selectedColor: Theme.of(context).colorScheme.primary,
+                  unselectedColor: Theme.of(context).colorScheme.inversePrimary,
+                ),
+              ),
+            ),
             Padding(
-                padding: EdgeInsets.only(top: 32),
+              padding: EdgeInsets.only(top: 32),
+              child: Text(
+                card.fields[CardField.frontTitle] as String,
+                style: TextStyle(fontSize: 32, color: cardColor),
+              ),
+            ),
+            Padding(
+              padding: EdgeInsets.fromLTRB(16, 32, 16, 16),
+              child: Text(
+                card.fields[CardField.frontSubtitle] as String,
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+            ),
+            Padding(
+              padding: EdgeInsets.all(16),
+              child: Visibility(
                 child: Text(
-                  card.fields[CardField.frontTitle] as String,
-                  style: TextStyle(fontSize: 32, color: cardColor),
-                )),
-            Padding(
-                padding: EdgeInsets.only(top: 32),
-                child: Text(card.fields[CardField.frontSubtitle] as String)),
-            Padding(
-                padding: EdgeInsets.only(top: 32),
-                child: Visibility(
-                  child: Text(card.fields[CardField.backTitle] as String),
-                  maintainAnimation: true,
-                  maintainSize: true,
-                  maintainState: true,
-                  visible: isVisible,
-                ))
+                  card.fields[CardField.backTitle] as String,
+                  style: Theme.of(context).textTheme.labelLarge,
+                ),
+                maintainAnimation: true,
+                maintainSize: true,
+                maintainState: true,
+                visible: isVisible,
+              ),
+            ),
           ],
         ),
       ),
-      onTap: () => setState(() => isVisible = !isVisible),
-      splashColor: Colors.transparent,
-      highlightColor: Colors.transparent,
-      enableFeedback: false,
     );
   }
 
