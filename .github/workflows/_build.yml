@@ -1,0 +1,109 @@
+name: "Build Flutter App"
+
+on:
+  workflow_call:
+    inputs:
+      next_version:
+        type: string
+      deploy_page:
+        type: boolean
+        default: false
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: ["ubuntu-latest"]
+        target: ["apk", "web"]
+        include:
+          - target: apk
+            path: build/app/outputs/apk/release/*.apk
+          - target: web
+            path: build/web
+          # - os: windows-latest
+          #   target: windows
+          #   path: build/windows/x64/runner/Release
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Decode files
+        env:
+          FIREBASE_OPTIONS: ${{ secrets.FIREBASE_OPTIONS_DART }}
+          GOOGLE_SERVICES: ${{ secrets.GOOGLE_SERVICES_JSON }}
+          KEYSTORE_FILE: ${{ secrets.KEYSTORE_FILE_BASE64 }}
+        run: |
+          echo $FIREBASE_OPTIONS | base64 --decode > lib/firebase_options.dart
+          echo $GOOGLE_SERVICES | base64 --decode > android/app/google-services.json
+          echo $KEYSTORE_FILE | base64 --decode > android/app/keystore.jks
+
+      - name: Create key.properties
+        run: |
+          cat > android/key.properties << EOL
+          storePassword=${{ secrets.KEYSTORE_PASSWORD }}
+          keyPassword=${{ secrets.KEYSTORE_KEY_PASSWORD }}
+          keyAlias=${{ secrets.KEYSTORE_KEY_ALIAS }}
+          storeFile=keystore.jks
+          EOL
+
+      - name: Edit pubspec version
+        if: inputs.next_version
+        run: |
+          sed -Ei "s/^version: (.*)/version: ${{ inputs.next_version }}/" pubspec.yaml
+
+      - name: Setup Java
+        if: matrix.target == 'apk'
+        uses: actions/setup-java@v4
+        with:
+          distribution: "temurin"
+          java-version: "19"
+          cache: "gradle"
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: "stable"
+          cache: true
+
+      - name: Set up Android SDK
+        if: env.ACT
+        uses: android-actions/setup-android@v3
+
+      - name: Install Dependencies
+        run: flutter pub get
+
+      - name: Build ${{ matrix.target }} Release
+        run: flutter build ${{ matrix.target }}
+
+      - name: Upload ${{ matrix.target }} Artifacts
+        if: matrix.target == 'apk'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.os }}_${{ matrix.target }}
+          path: ${{ matrix.path }}
+
+      - name: Create Archive
+        if: matrix.target != 'apk'
+        run: |
+          tar -czvf ${{ matrix.os }}_${{ matrix.target }}-release.tgz ${{ matrix.path }}
+
+      - name: Upload Archive
+        if: matrix.target != 'apk'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.os }}_${{ matrix.target }}
+          path: ${{ matrix.os }}_${{ matrix.target }}-release.tgz
+
+      - name: Deploy Web
+        if: matrix.target == 'web' && inputs.deploy_page
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ github.token }}
+          publish_dir: ${{ matrix.path }}
+          publish_branch: gh-pages_${{ matrix.os }}

@@ -3,169 +3,28 @@ name: "Build And Deploy Flutter App"
 on:
   workflow_dispatch:
     inputs:
-      deploy-page:
+      deploy_page:
         type: boolean
         default: true
-      create-release:
+      create_release:
         type: boolean
         default: true
-
-defaults:
-  run:
-    shell: bash
 
 jobs:
   version:
-    runs-on: ubuntu-latest
-    outputs:
-      next_version: ${{ steps.next_version.outputs.next_version }}
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Get Latest Release Tag
-        id: latest_release
-        uses: "WyriHaximus/github-action-get-previous-tag@v1"
-        with:
-          prefix: "release/uat/"
-          fallback: 1.0.0
-
-      - name: Semantic Release
-        id: semantic
-        uses: cycjimmy/semantic-release-action@v3
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-        with:
-          semantic_version: 19
-
-      - name: Calculate Next Version
-        id: next_version
-        run: |
-          re="[^0-9]*([0-9]+)\.([0-9]+)\.([0-9]+)\+?([0-9]+)?"
-          last_version="${{ steps.latest_release.outputs.tag }}"
-          new_version="${{ steps.semantic.outputs.new_release_version }}"
-          if [ -z "$new_version" ]
-          then next_version=$last_version
-          else next_version=$new_version; fi
-          major=$(echo "$next_version" | sed -E "s/$re/\1/")
-          minor=$(echo "$next_version" | sed -E "s/$re/\2/")
-          patch=$(echo "$next_version" | sed -E "s/$re/\3/")
-          build=$(echo "$last_version" | sed -E "s/$re/\4/")
-          ((build++)) || true
-          echo "next_version=$major.$minor.$patch+$build" >> $GITHUB_OUTPUT
+    uses: ./.github/workflows/_version.yml
 
   build:
     needs: version
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os: ["ubuntu-latest"]
-        target: ["apk", "web"]
-        include:
-          - target: apk
-            path: build/app/outputs/apk/release/*.apk
-          - target: web
-            path: build/web
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Decode files
-        env:
-          FIREBASE_OPTIONS_DART: ${{ secrets.FIREBASE_OPTIONS_DART }}
-          GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
-          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_FILE_BASE64 }}
-        run: |
-          echo $FIREBASE_OPTIONS_DART | base64 --decode > lib/firebase_options.dart
-          echo $GOOGLE_SERVICES_JSON | base64 --decode > android/app/google-services.json
-          echo $KEYSTORE_BASE64 | base64 --decode > upload-keystore.jks
-
-      - name: Create key.properties
-        env:
-          KEY_PROPERTIES_PATH: ${{ github.workspace }}/android/key.properties
-        run: |
-          echo 'storePassword=${{ secrets.KEYSTORE_PASSWORD }}' > $KEY_PROPERTIES_PATH
-          echo 'keyPassword=${{ secrets.KEYSTORE_KEY_PASSWORD }}' >> $KEY_PROPERTIES_PATH
-          echo 'keyAlias=${{ secrets.KEYSTORE_KEY_ALIAS }}' >> $KEY_PROPERTIES_PATH
-          echo 'storeFile=${{ github.workspace }}/upload-keystore.jks' >> $KEY_PROPERTIES_PATH
-
-      - name: Edit pubspec version
-        run: |
-          sed -Ei "s/^version: (.*)/version: ${{ needs.version.outputs.next_version }}/" pubspec.yaml
-
-      - name: Setup Java
-        if: matrix.target == 'apk'
-        uses: actions/setup-java@v4
-        with:
-          distribution: "temurin"
-          java-version: "19"
-          cache: "gradle"
-
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          channel: "stable"
-          cache: true
-
-      - name: Install Dependencies
-        run: flutter pub get
-
-      - name: Build ${{ matrix.target }} Release
-        run: flutter build ${{ matrix.target }}
-
-      - name: Upload ${{ matrix.target }} Artifacts
-        if: matrix.target == 'apk'
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ matrix.os }}_${{ matrix.target }}
-          path: ${{ matrix.path }}
-
-      - name: Create Archive
-        if: matrix.target != 'apk'
-        run: |
-          tar -czvf ${{ matrix.os }}_${{ matrix.target }}-release.tgz ${{ matrix.path }}
-
-      - name: Upload Archive
-        if: matrix.target != 'apk'
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ matrix.os }}_${{ matrix.target }}
-          path: ${{ matrix.os }}_${{ matrix.target }}-release.tgz
-
-      - name: Deploy Web
-        if: matrix.target == 'web' && github.event.inputs.deploy-page
-        uses: peaceiris/actions-gh-pages@v3
-        with:
-          github_token: ${{ github.token }}
-          publish_dir: ${{ matrix.path }}
-          publish_branch: gh-pages_${{ matrix.os }}
+    uses: ./.github/workflows/_build.yml
+    with:
+      next_version: ${{ needs.version.outputs.next_version }}
+      deploy_page: ${{ inputs.deploy_page }}
+    secrets: inherit
 
   release:
     needs: [version, build]
-    if: github.event.inputs.create-release
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Download Artifacts
-        uses: actions/download-artifact@v4
-        with:
-          path: artifacts
-
-      - name: Create Tag
-        if: github.event.inputs.create-release
-        uses: rickstaa/action-create-tag@v1
-        with:
-          tag: "release/uat/${{ needs.version.outputs.next_version }}"
-          message: "UAT release ${{ needs.version.outputs.next_version }}"
-
-      - name: Create Release
-        if: github.event.inputs.create-release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: "release/uat/${{ needs.version.outputs.next_version }}"
-          files: artifacts/**/*
+    if: inputs.create_release
+    uses: ./.github/workflows/_release.yml
+    with:
+      next_version: ${{ needs.version.outputs.next_version }}

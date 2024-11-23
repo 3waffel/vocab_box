@@ -1,0 +1,32 @@
+name: "Make A Release"
+
+on:
+  workflow_call:
+    inputs:
+      next_version:
+        required: true
+        type: string
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Create Tag
+        uses: rickstaa/action-create-tag@v1
+        with:
+          tag: "release/uat/${{ inputs.next_version }}"
+          message: "UAT release ${{ inputs.next_version }}"
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: "release/uat/${{ inputs.next_version }}"
+          files: artifacts/**/*
