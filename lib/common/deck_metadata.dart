@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:vocab_box/common/navigator_key.dart';
 import 'package:vocab_box/components/deck_fields_setting.dart';
 import 'package:vocab_box/data/database/card_repository.dart';
 import 'package:vocab_box/data/models/card_model.dart';
@@ -22,9 +23,8 @@ class DeckMetadata {
   });
 
   static Future<DeckMetadata> syncDeckMetadata(
-    String deckName, [
-    BuildContext? context,
-  ]) async {
+    String deckName,
+  ) async {
     final maps = await cardRepository.getTable(deckName);
     final cardList = CardModel.fromMapList(maps);
     final deckCount = cardList.length;
@@ -32,7 +32,7 @@ class DeckMetadata {
         cardList.where((item) => item.learningProgress > 3).length;
     final learningCount =
         cardList.where((item) => item.learningProgress > 0).length;
-    final deckFields = await getDeckFields(deckName, context);
+    final deckFields = await getDeckFields(deckName);
     return DeckMetadata(
       deckName: deckName,
       deckCount: deckCount,
@@ -44,9 +44,8 @@ class DeckMetadata {
   }
 
   static Future<(List<String>, List<String>)> getDeckFields(
-    String deckName, [
-    BuildContext? context,
-  ]) async {
+    String deckName,
+  ) async {
     final prefs = await SharedPreferences.getInstance();
     (List<String>, List<String>) fields = ([], []);
     if (prefs.containsKey('${deckName}_frontFields')) {
@@ -58,8 +57,10 @@ class DeckMetadata {
       fields.$2.addAll(List.from(backFields));
     }
 
-    if ((fields.$1.isEmpty || fields.$2.isEmpty) && context != null) {
-      bool setup = await showAdaptiveDialog(
+    if ((fields.$1.isEmpty || fields.$2.isEmpty) &&
+        navigatorKey.currentContext != null) {
+      var context = navigatorKey.currentContext!;
+      bool? setup = await showAdaptiveDialog(
         context: context,
         builder: (ctx) => AlertDialog(
           title: Text("Invalid Layout: ${deckName}"),
@@ -67,18 +68,18 @@ class DeckMetadata {
               "Invalid card layout detected, do you want to set up layout now?"),
           actions: [
             TextButton(
-              onPressed: () => Navigator.of(context).pop(true),
+              onPressed: () => Navigator.of(ctx).pop(true),
               child: Text("Continue"),
             ),
             TextButton(
-              onPressed: () => Navigator.of(context).pop(false),
+              onPressed: () => Navigator.of(ctx).pop(false),
               child: Text("Cancel"),
             ),
           ],
         ),
       );
 
-      if (setup) {
+      if (setup ??= false) {
         var result = await Navigator.of(context).push(
           MaterialPageRoute(
             builder: (context) => DeckFieldsSetting(deckName: deckName),

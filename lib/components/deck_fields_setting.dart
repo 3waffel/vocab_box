@@ -55,6 +55,7 @@ class _DeckFieldsSettingState extends State<DeckFieldsSetting> {
                 });
               },
             ),
+            Padding(padding: EdgeInsets.symmetric(vertical: 10)),
             ElevatedButton(
               onPressed: () async {
                 final prefs = await SharedPreferences.getInstance();

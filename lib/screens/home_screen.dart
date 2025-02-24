@@ -91,7 +91,7 @@ class _HomeScreenState extends State<HomeScreen> {
     List<DeckMetadata> newDeckStatusList = [];
     final tables = await cardRepository.getTableNames();
     for (final deckName in tables) {
-      var deckMetadata = await DeckMetadata.syncDeckMetadata(deckName, context);
+      var deckMetadata = await DeckMetadata.syncDeckMetadata(deckName);
       newDeckStatusList.add(deckMetadata);
     }
     if (!listEquals(deckStatusList, newDeckStatusList)) {
@@ -106,7 +106,7 @@ class _HomeScreenState extends State<HomeScreen> {
     if (index == -1) {
       return;
     }
-    var deckMetadata = await DeckMetadata.syncDeckMetadata(deckName, context);
+    var deckMetadata = await DeckMetadata.syncDeckMetadata(deckName);
     setState(() {
       deckStatusList[index] = deckMetadata;
     });

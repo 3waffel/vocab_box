@@ -37,6 +37,7 @@ class DraggableHeaders extends StatelessWidget {
     return Column(
       children: [
         buildDragTargetList('Front Fields', frontFields),
+        Padding(padding: EdgeInsets.symmetric(vertical: 10)),
         buildDragTargetList('Back Fields', backFields),
       ],
     );
@@ -77,7 +78,7 @@ class DraggableHeaders extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         buildDraggableHeaders,
-        SizedBox(height: 20),
+        Padding(padding: EdgeInsets.symmetric(vertical: 10)),
         buildDragTargets,
       ],
     );

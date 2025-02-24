@@ -1,5 +1,6 @@
 import 'package:firebase_core/firebase_core.dart' show Firebase;
 import 'package:flutter/material.dart';
+import 'package:vocab_box/common/navigator_key.dart';
 import 'package:vocab_box/firebase_options.dart' show DefaultFirebaseOptions;
 import 'package:vocab_box/screens/navigation_screen.dart';
 import 'package:vocab_box/screens/start_screen.dart';
@@ -27,6 +28,7 @@ class App extends StatelessWidget {
         useMaterial3: true,
       ),
       initialRoute: StartScreen.id,
+      navigatorKey: navigatorKey,
       routes: {
         StartScreen.id: (context) => StartScreen(),
         NavigationScreen.id: (context) => NavigationScreen(),

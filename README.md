@@ -20,14 +20,14 @@ dart run flutterfire_cli:flutterfire configure
 
 ### Setup Secrets in GitHub CI
 
-- base64 encoded files: `lib/firebase_options.dart`, `android/app/google-services.json`, `android/app/upload-keystore.jks`
-  - `FIREBASE_OPTIONS_DART`
-  - `GOOGLE_SERVICES_JSON`
-  - `KEYSTORE_FILE_BASE64`
+- base64 encoded files:
+  - `FIREBASE_OPTIONS_DART` -> `lib/firebase_options.dart`
+  - `GOOGLE_SERVICES_JSON` -> `android/app/google-services.json`
+  - `KEYSTORE_FILE_BASE64` -> `android/app/upload-keystore.jks`
 - keystore properties in `android/key.properties`
-  - `KEYSTORE_PASSWORD`
-  - `KEYSTORE_KEY_PASSWORD`
-  - `KEYSTORE_KEY_ALIAS`
+  - `KEYSTORE_PASSWORD` -> `storePassword`
+  - `KEYSTORE_KEY_PASSWORD` -> `keyPassword`
+  - `KEYSTORE_KEY_ALIAS` -> `keyAlias`
 
 ### Test Locally 
 
