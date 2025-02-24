@@ -1,19 +1,18 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:vocab_box/common/deck_loader.dart';
-import 'package:vocab_box/models/card.dart';
-
-import 'card_database.dart';
+import 'package:vocab_box/data/database/data_retrieval.dart';
+import 'package:vocab_box/data/models/base_model.dart';
 
 typedef FBDatabase = DocumentReference<Map<String, dynamic>>;
 
-class FireBaseDatabase implements CardDatabase {
-  static const table = 'default_deck';
+class FireBaseDatabase<T extends BaseModel> implements DataRetrieval<T> {
+  // static const table = 'default_deck';
 
   /// private constructor
-  FireBaseDatabase._internal();
-  static final FireBaseDatabase _instance = FireBaseDatabase._internal();
-  factory FireBaseDatabase() => _instance;
+  // FireBaseDatabase._internal();
+  // static final FireBaseDatabase<Never> _instance = FireBaseDatabase._internal();
+  // factory FireBaseDatabase() => _instance;
+  const FireBaseDatabase();
 
   static FBDatabase? _database = null;
   Future<FBDatabase> get database async {
@@ -30,21 +29,19 @@ class FireBaseDatabase implements CardDatabase {
     final users = FirebaseFirestore.instance.collection("users");
 
     final dbRef = users.doc(uid);
-    final tableRef = dbRef.collection(table);
+    // final tableRef = dbRef.collection(table);
 
-    final tableSnapshot = await tableRef.get();
-    if (tableSnapshot.docs.length == 0) {
-      await dbRef.set(
-        {table: tableRef.path},
-        SetOptions(merge: true),
-      );
-      final cardList = await DeckLoader().loadFromAsset();
-      for (var card in cardList) {
-        await tableRef
-            .doc(card.fields[CardField.id].toString())
-            .set(card.toMap());
-      }
-    }
+    // final tableSnapshot = await tableRef.get();
+    // if (tableSnapshot.docs.length == 0) {
+    //   await dbRef.set(
+    //     {table: tableRef.path},
+    //     SetOptions(merge: true),
+    //   );
+    //   final items = await DeckLoader().loadFromAsset();
+    //   for (var item in items) {
+    //     await tableRef.doc(item.id.toString()).set(item.toMap());
+    //   }
+    // }
     return dbRef;
   }
 
@@ -59,8 +56,9 @@ class FireBaseDatabase implements CardDatabase {
     );
   }
 
+  @override
   Future<void> createTable(String table) async {
-    final tables = await getTableNameList();
+    final tables = await getTableNames();
     if (tables.contains(table)) {
       return;
     }
@@ -73,6 +71,7 @@ class FireBaseDatabase implements CardDatabase {
     );
   }
 
+  @override
   Future<void> deleteTable(String table) async {
     final dbRef = await database;
     final tableRef = dbRef.collection(table);
@@ -84,6 +83,7 @@ class FireBaseDatabase implements CardDatabase {
     dbRef.update({table: null});
   }
 
+  @override
   Future<List<Map<String, Object?>>> getTable(String table) async {
     final dbRef = await database;
     final tableSnapshot = await dbRef.collection(table).get();
@@ -93,7 +93,8 @@ class FireBaseDatabase implements CardDatabase {
     );
   }
 
-  Future<List<String>> getTableNameList() async {
+  @override
+  Future<List<String>> getTableNames() async {
     final dbRef = await database;
     final dbSnapshot = await dbRef.get();
     final data = dbSnapshot.data()!;
@@ -101,29 +102,27 @@ class FireBaseDatabase implements CardDatabase {
     return List.from(data.keys);
   }
 
+  @override
   Future<void> insertMany({
-    required Iterable<CardModel> cardList,
+    required Iterable<T> items,
     required String table,
   }) async {
     final dbRef = await database;
     final tableRef = dbRef.collection(table);
-    for (var card in cardList) {
-      await tableRef
-          .doc(card.fields[CardField.id].toString())
-          .set(card.toMap());
+    for (var item in items) {
+      await tableRef.doc(item.id.toString()).set(item.toMap());
     }
   }
 
+  @override
   Future<void> updateMany({
-    required Iterable<CardModel> cardList,
+    required Iterable<T> items,
     required String table,
   }) async {
     final dbRef = await database;
     final tableRef = dbRef.collection(table);
-    for (var card in cardList) {
-      await tableRef
-          .doc(card.fields[CardField.id].toString())
-          .set(card.toMap());
+    for (var item in items) {
+      await tableRef.doc(item.id.toString()).set(item.toMap());
     }
   }
 }

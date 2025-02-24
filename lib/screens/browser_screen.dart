@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:vocab_box/common/database/card_database.dart';
-import 'package:vocab_box/models/card.dart';
+import 'package:vocab_box/common/deck_metadata.dart';
+import 'package:vocab_box/data/database/card_repository.dart';
+import 'package:vocab_box/data/models/card_model.dart';
+import 'package:vocab_box/screens/detail_screen.dart';
 
 /// TODO implement lazy load
 class BrowserScreen extends StatefulWidget {
@@ -14,6 +16,8 @@ class BrowserScreen extends StatefulWidget {
 class _BrowserScreenState extends State<BrowserScreen> {
   static List<String> deckNameList = [];
   String? selectedDeck;
+  DeckMetadata? deckMetadata;
+
   List<CardModel> cardList = [];
   List<CardModel> filtered = [];
   bool isSearchBarActive = false;
@@ -25,14 +29,16 @@ class _BrowserScreenState extends State<BrowserScreen> {
   }
 
   Future<void> _initDeckNameList() async {
-    final tables = await cardDatabase.getTableNameList();
+    final tables = await cardRepository.getTableNames();
     setState(() => deckNameList = tables);
   }
 
   Future<void> _loadDeck() async {
     if (selectedDeck != null) {
-      final maps = await cardDatabase.getTable(selectedDeck!);
+      final maps = await cardRepository.getTable(selectedDeck!);
+      final metadata = await DeckMetadata.syncDeckMetadata(selectedDeck!);
       setState(() {
+        deckMetadata = metadata;
         cardList = CardModel.fromMapList(maps);
         filtered = cardList;
       });
@@ -69,10 +75,13 @@ class _BrowserScreenState extends State<BrowserScreen> {
             width: 180,
             child: TextField(
               onChanged: (value) {
+                var frontFields = deckMetadata?.frontFields;
+                if (frontFields == null || frontFields.isEmpty) {
+                  return;
+                }
                 setState(() => filtered = cardList
-                    .where((item) =>
-                        (item.fields[CardField.frontTitle] as String)
-                            .contains(value))
+                    .where(
+                        (item) => (item.data[frontFields[0]]).contains(value))
                     .toList());
               },
               decoration: InputDecoration(
@@ -102,81 +111,36 @@ class _BrowserScreenState extends State<BrowserScreen> {
                 onPressed: () => setState(() => isSearchBarActive = true),
                 icon: Icon(Icons.search)),
       ),
-      body: ListView.builder(
-          padding: EdgeInsets.symmetric(horizontal: 10),
-          itemCount: filtered.length,
-          itemBuilder: (context, index) {
-            var frontTitle =
-                filtered[index].fields[CardField.frontTitle] as String;
-            var backTitle =
-                filtered[index].fields[CardField.backTitle] as String;
+      body: deckMetadata == null || deckMetadata!.frontFields.isEmpty
+          ? null
+          : ListView.builder(
+              padding: EdgeInsets.symmetric(horizontal: 10),
+              itemCount: filtered.length,
+              itemBuilder: (context, index) {
+                Color cardColor = Colors.white70;
+                var data = filtered[index].data;
+                var title = Text(
+                  data[deckMetadata!.frontFields[0]],
+                  style: TextStyle(color: cardColor),
+                );
+                var subtitle = deckMetadata!.backFields.isEmpty
+                    ? null
+                    : Text(data[deckMetadata!.backFields[0]]);
 
-            Color cardColor = Colors.white70;
-            switch (frontTitle.split(' ')[0]) {
-              case 'der':
-                cardColor = Colors.blueAccent;
-              case 'das':
-                cardColor = Colors.greenAccent;
-              case 'die':
-                cardColor = Colors.redAccent;
-            }
-
-            return ListTile(
-              title: Text(
-                frontTitle,
-                style: TextStyle(color: cardColor),
-              ),
-              subtitle: Text("${backTitle}"),
-              onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => DetailScreen(card: filtered[index]),
-                ),
-              ),
-            );
-          }),
-    );
-  }
-}
-
-class DetailScreen extends StatelessWidget {
-  const DetailScreen({super.key, required CardModel this.card});
-  final CardModel card;
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(),
-      body: ListView(
-        padding: EdgeInsets.symmetric(horizontal: 20),
-        children: [
-          ListTile(
-            contentPadding: EdgeInsets.symmetric(horizontal: 10),
-            title: Text(
-              card.fields[CardField.frontTitle] as String,
-              style: Theme.of(context).textTheme.headlineSmall,
-            ),
-          ),
-          ListTile(
-            title: Text(
-              card.fields[CardField.backTitle] as String,
-              style: Theme.of(context).textTheme.bodyLarge,
-            ),
-          ),
-          ListTile(
-            title: Text(
-              card.fields[CardField.frontSubtitle] as String,
-              style: Theme.of(context).textTheme.bodyMedium,
-            ),
-          ),
-          ListTile(
-            title: Text(
-              "Correct Times: ${card.fields[CardField.correctTimes].toString()}",
-              style: Theme.of(context).textTheme.labelMedium,
-            ),
-          ),
-        ],
-      ),
+                return ListTile(
+                  title: title,
+                  subtitle: subtitle,
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => DetailScreen(
+                        card: filtered[index],
+                        deckMetadata: deckMetadata!,
+                      ),
+                    ),
+                  ),
+                );
+              }),
     );
   }
 }

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:vocab_box/screens/browser.dart';
-import 'package:vocab_box/screens/home.dart';
-import 'package:vocab_box/screens/settings.dart';
+import 'package:vocab_box/screens/browser_screen.dart';
+import 'package:vocab_box/screens/home_screen.dart';
+import 'package:vocab_box/screens/settings_screen.dart';
 
 class NavigationScreen extends StatefulWidget {
   const NavigationScreen({super.key});

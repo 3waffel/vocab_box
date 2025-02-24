@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:vocab_box/screens/start.dart';
+import 'package:vocab_box/screens/start_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -31,20 +31,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
           FutureBuilder(
             future: SharedPreferences.getInstance(),
             builder: (context, value) {
-              final prefs = value.data;
+              var aboutBoxChildren = <Widget>[];
+              final savedSettings = value.data;
+              if (savedSettings != null) {
+                aboutBoxChildren = savedSettings.getKeys().map((key) {
+                  var value = savedSettings.get(key);
+                  return Text(
+                    "${key}:  ${value.toString()}",
+                    style: Theme.of(context).textTheme.labelLarge,
+                  );
+                }).toList();
+              }
+              var applicationVersion = packageInfo != null
+                  ? "${packageInfo!.version}+${packageInfo!.buildNumber}"
+                  : null;
               return AboutListTile(
                   icon: Icon(Icons.info),
                   child: Text("About"),
                   applicationName: packageInfo?.appName,
-                  applicationVersion: packageInfo != null
-                      ? "${packageInfo!.version}+${packageInfo!.buildNumber}"
-                      : null,
-                  aboutBoxChildren: prefs
-                          ?.getKeys()
-                          .map((key) =>
-                              Text("${key}: ${prefs.get(key).toString()}"))
-                          .toList() ??
-                      []);
+                  applicationVersion: applicationVersion,
+                  aboutBoxChildren: aboutBoxChildren);
             },
           ),
           ListTile(

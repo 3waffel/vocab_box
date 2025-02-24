@@ -1,8 +1,8 @@
 import 'package:firebase_core/firebase_core.dart' show Firebase;
 import 'package:flutter/material.dart';
 import 'package:vocab_box/firebase_options.dart' show DefaultFirebaseOptions;
-import 'package:vocab_box/screens/navigation.dart';
-import 'package:vocab_box/screens/start.dart';
+import 'package:vocab_box/screens/navigation_screen.dart';
+import 'package:vocab_box/screens/start_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();

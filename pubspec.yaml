@@ -24,6 +24,7 @@ dependencies:
   firebase_auth: ^4.19.1
   file_picker: ^8.0.5
   win32: ^5.5.3
+  json_annotation: ^4.9.0
 
 dev_dependencies:
   flutter_test:
@@ -31,6 +32,7 @@ dev_dependencies:
   flutter_lints: ^3.0.0
   flutter_launcher_icons: ^0.13.1
   flutterfire_cli: ^1.0.0
+  json_serializable: ^6.9.0
 
 flutter_launcher_icons:
   image_path: "assets/icon.png"
