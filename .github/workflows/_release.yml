@@ -22,11 +22,11 @@ jobs:
       - name: Create Tag
         uses: rickstaa/action-create-tag@v1
         with:
-          tag: "release/uat/${{ inputs.next_version }}"
-          message: "UAT release ${{ inputs.next_version }}"
+          tag: "v${{ inputs.next_version }}"
+          message: "release ${{ inputs.next_version }}"
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: "release/uat/${{ inputs.next_version }}"
+          tag_name: "v${{ inputs.next_version }}"
           files: artifacts/**/*
