@@ -55,7 +55,10 @@ class _DeckImportFormState extends State<DeckImportForm> {
       shouldParseNumbers: false,
     );
     final fields = _converter.convert(content);
-    final values = fields.skip(1).toList();
+    final values = fields
+        .skip(1)
+        .where((row) => row.any((cell) => cell.toString().trim().isNotEmpty))
+        .toList();
 
     setState(() {
       headers = fields.first.cast<String>();
@@ -99,8 +102,7 @@ class _DeckImportFormState extends State<DeckImportForm> {
       setState(() => deckNameController.text =
           result.files.first.name.replaceAll(RegExp(r"[^a-zA-Z0-9_]"), "_"));
     } catch (e) {
-      SnackBarExt(context)
-          .fluidSnackBar("Failed to load the deck: " + e.toString());
+      navigatorSnackBar("Failed to load the deck: " + e.toString());
     }
   }
 

@@ -3,7 +3,8 @@ import 'dart:convert';
 import 'package:vocab_box/data/models/base_model.dart';
 
 class CardModel extends BaseModel {
-  double learningProgress = 0;
+  double learningProgress;
+  DateTime updatedAt;
 
   @override
   String toString() {
@@ -14,7 +15,8 @@ class CardModel extends BaseModel {
   CardModel({
     required super.id,
     required super.data,
-    this.learningProgress = 0,
+    required this.learningProgress,
+    required this.updatedAt,
   });
 
   @override
@@ -33,16 +35,22 @@ class CardModel extends BaseModel {
     if (map.containsKey('data')) {
       data = jsonDecode(map['data']);
     }
-    double learningProgress = 0;
-    if (data.containsKey('learningProgress')) {
-      learningProgress =
-          double.tryParse(data['learningProgress'].toString()) ?? 0;
-    }
+
+    double? learningProgress = data.containsKey('learningProgress')
+        ? double.tryParse(data['learningProgress'].toString())
+        : 0;
+    learningProgress ??= 0;
+
+    DateTime? updatedAt = data.containsKey('updatedAt')
+        ? DateTime.tryParse(data['updatedAt'].toString())
+        : DateTime.now();
+    updatedAt ??= DateTime.now();
 
     return CardModel(
       id: map["id"],
       data: data,
       learningProgress: learningProgress,
+      updatedAt: updatedAt,
     );
   }
 

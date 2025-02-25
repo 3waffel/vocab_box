@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:vocab_box/common/deck_metadata.dart';
 import 'package:vocab_box/data/database/card_repository.dart';
 
 import 'draggable_headers.dart';
@@ -24,14 +25,16 @@ class _DeckFieldsSettingState extends State<DeckFieldsSetting> {
   @override
   initState() {
     super.initState();
-    cardRepository.getTable(widget.deckName).then((table) {
-      if (table.firstOrNull?.containsKey('data') != null) {
-        var data = jsonDecode(table.first['data']);
-        setState(() {
-          headers = List.from(data.keys);
-        });
-      }
-    });
+    _initHeaders();
+  }
+
+  void _initHeaders() async {
+    var table = await cardRepository.getTable(widget.deckName);
+    if (table.firstOrNull?.containsKey('data') != null) {
+      var data = jsonDecode(table.first['data']);
+      headers = List.from(data.keys);
+      return setState(() {});
+    }
   }
 
   @override
@@ -63,7 +66,8 @@ class _DeckFieldsSettingState extends State<DeckFieldsSetting> {
                     '${widget.deckName}_frontFields', frontFields);
                 prefs.setStringList(
                     '${widget.deckName}_backFields', backFields);
-                Navigator.of(context).pop((frontFields, backFields));
+                Navigator.of(context)
+                    .pop<DeckFieldsPair>((frontFields, backFields));
               },
               child: Text('Save'),
             ),

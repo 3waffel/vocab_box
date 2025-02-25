@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:vocab_box/common/navigator_key.dart';
 
 extension SnackBarExt on BuildContext {
   void fluidSnackBar(String message) {
@@ -14,3 +15,6 @@ extension SnackBarExt on BuildContext {
       ));
   }
 }
+
+void navigatorSnackBar(String message) =>
+    SnackBarExt(navigatorKey.currentContext!).fluidSnackBar(message);

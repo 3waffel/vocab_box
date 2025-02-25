@@ -5,6 +5,8 @@ import 'package:vocab_box/components/deck_fields_setting.dart';
 import 'package:vocab_box/data/database/card_repository.dart';
 import 'package:vocab_box/data/models/card_model.dart';
 
+typedef DeckFieldsPair = (List<String>, List<String>);
+
 class DeckMetadata {
   final String deckName;
   final int deckCount;
@@ -43,7 +45,7 @@ class DeckMetadata {
     );
   }
 
-  static Future<(List<String>, List<String>)> getDeckFields(
+  static Future<DeckFieldsPair> getDeckFields(
     String deckName,
   ) async {
     final prefs = await SharedPreferences.getInstance();
@@ -57,39 +59,42 @@ class DeckMetadata {
       fields.$2.addAll(List.from(backFields));
     }
 
-    if ((fields.$1.isEmpty || fields.$2.isEmpty) &&
+    if (fields.$1.isEmpty &&
+        fields.$2.isEmpty &&
         navigatorKey.currentContext != null) {
-      var context = navigatorKey.currentContext!;
-      bool? setup = await showAdaptiveDialog(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          title: Text("Invalid Layout: ${deckName}"),
-          content: Text(
-              "Invalid card layout detected, do you want to set up layout now?"),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(ctx).pop(true),
-              child: Text("Continue"),
-            ),
-            TextButton(
-              onPressed: () => Navigator.of(ctx).pop(false),
-              child: Text("Cancel"),
-            ),
-          ],
-        ),
-      );
-
-      if (setup ??= false) {
-        var result = await Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (context) => DeckFieldsSetting(deckName: deckName),
-          ),
-        );
-        if (result != null) {
-          fields = result;
-        }
-      }
+      fields = await setupDeckFields(deckName) ?? fields;
     }
     return fields;
+  }
+
+  static Future<DeckFieldsPair?> setupDeckFields(String deckName) async {
+    var context = navigatorKey.currentContext!;
+    bool? setup = await showAdaptiveDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text("Invalid Layout: ${deckName}"),
+        content: Text(
+            "Invalid card layout detected, do you want to set up layout now?"),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: Text("Continue"),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text("Cancel"),
+          ),
+        ],
+      ),
+    );
+
+    if (setup ??= false) {
+      return await Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (context) => DeckFieldsSetting(deckName: deckName),
+        ),
+      );
+    }
+    return null;
   }
 }
