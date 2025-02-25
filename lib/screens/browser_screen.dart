@@ -46,53 +46,54 @@ class _BrowserScreenState extends State<BrowserScreen> {
   }
 
   Widget _buildSearchBar() {
+    var dropdownButton = DropdownButtonHideUnderline(
+      child: DropdownButton(
+        padding: EdgeInsets.symmetric(horizontal: 8),
+        borderRadius: BorderRadius.all(Radius.circular(5)),
+        value: selectedDeck,
+        items: deckNameList
+            .map((item) => DropdownMenuItem(
+                  value: item,
+                  child: Text(item),
+                ))
+            .toList(),
+        onChanged: (value) {
+          setState(() => selectedDeck = value);
+          _loadDeck();
+        },
+      ),
+    );
+    var searchBox = SizedBox(
+      width: 180,
+      child: TextField(
+        onChanged: (value) {
+          var frontFields = deckMetadata?.frontFields;
+          if (frontFields == null || frontFields.isEmpty) {
+            return;
+          }
+          setState(() => filtered = cardList
+              .where((item) => (item.data[frontFields[0]]).contains(value))
+              .toList());
+        },
+        decoration: InputDecoration(
+          prefixIcon: Icon(Icons.search),
+          suffixIcon: IconButton(
+            onPressed: () => setState(() => isSearchBarActive = false),
+            icon: Icon(Icons.close),
+          ),
+        ),
+      ),
+    );
     return Container(
       decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.onSecondary,
+          color: ColorScheme.of(context).secondaryContainer,
           borderRadius: BorderRadius.all(Radius.circular(10))),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         mainAxisSize: MainAxisSize.min,
         children: [
-          DropdownButtonHideUnderline(
-            child: DropdownButton(
-              padding: EdgeInsets.symmetric(horizontal: 8),
-              borderRadius: BorderRadius.all(Radius.circular(5)),
-              value: selectedDeck,
-              items: deckNameList
-                  .map((item) => DropdownMenuItem(
-                        value: item,
-                        child: Text(item),
-                      ))
-                  .toList(),
-              onChanged: (value) {
-                setState(() => selectedDeck = value);
-                _loadDeck();
-              },
-            ),
-          ),
-          SizedBox(
-            width: 180,
-            child: TextField(
-              onChanged: (value) {
-                var frontFields = deckMetadata?.frontFields;
-                if (frontFields == null || frontFields.isEmpty) {
-                  return;
-                }
-                setState(() => filtered = cardList
-                    .where(
-                        (item) => (item.data[frontFields[0]]).contains(value))
-                    .toList());
-              },
-              decoration: InputDecoration(
-                prefixIcon: Icon(Icons.search),
-                suffixIcon: IconButton(
-                  onPressed: () => setState(() => isSearchBarActive = false),
-                  icon: Icon(Icons.close),
-                ),
-              ),
-            ),
-          ),
+          dropdownButton,
+          searchBox,
         ],
       ),
     );
@@ -117,12 +118,8 @@ class _BrowserScreenState extends State<BrowserScreen> {
               padding: EdgeInsets.symmetric(horizontal: 10),
               itemCount: filtered.length,
               itemBuilder: (context, index) {
-                Color cardColor = Colors.white70;
                 var data = filtered[index].data;
-                var title = Text(
-                  data[deckMetadata!.frontFields[0]],
-                  style: TextStyle(color: cardColor),
-                );
+                var title = Text(data[deckMetadata!.frontFields[0]]);
                 var subtitle = deckMetadata!.backFields.isEmpty
                     ? null
                     : Text(data[deckMetadata!.backFields[0]]);

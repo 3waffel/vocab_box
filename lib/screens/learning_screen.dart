@@ -132,7 +132,7 @@ class _LearningScreenState extends State<LearningScreen> {
         children: [
           Text(
             "Finished",
-            style: Theme.of(context).textTheme.headlineLarge,
+            style: TextTheme.of(context).headlineLarge,
           ),
           Padding(
             padding: EdgeInsets.symmetric(vertical: 16),
@@ -148,11 +148,10 @@ class _LearningScreenState extends State<LearningScreen> {
   }
 
   Widget _buildLearning(CardModel card) {
-    Color cardColor = Colors.white70;
     final frontFields = args.deckMetadata.frontFields;
     final backFields = args.deckMetadata.backFields;
 
-    var layout = [
+    List<Widget> layout = [
       Padding(
         padding: EdgeInsets.only(top: 32),
         child: SizedBox(
@@ -160,8 +159,8 @@ class _LearningScreenState extends State<LearningScreen> {
           child: StepProgressIndicator(
             currentStep: card.learningProgress.toInt(),
             totalSteps: args.learningLimit,
-            selectedColor: Theme.of(context).colorScheme.primary,
-            unselectedColor: Theme.of(context).colorScheme.inversePrimary,
+            selectedColor: ColorScheme.of(context).primary,
+            unselectedColor: ColorScheme.of(context).inversePrimary,
           ),
         ),
       )
@@ -169,51 +168,62 @@ class _LearningScreenState extends State<LearningScreen> {
     layout.addAll(frontFields.mapIndexed(
       (idx, elem) {
         var padding = switch (idx) {
-          0 => EdgeInsets.only(top: 32),
-          _ => EdgeInsets.only(top: 16),
+          0 => EdgeInsets.only(top: 32, left: 16, right: 16),
+          _ => EdgeInsets.only(top: 16, left: 16, right: 16),
         };
         var style = switch (idx) {
-          0 => TextStyle(fontSize: 32, color: cardColor),
-          _ => TextStyle(fontSize: 16, color: cardColor),
+          0 => TextStyle(
+              fontSize: 32,
+              color: ColorScheme.of(context).primary,
+            ),
+          _ => TextStyle(
+              fontSize: 16,
+              color: ColorScheme.of(context).secondary,
+            ),
         };
         return Padding(
           padding: padding,
           child: Text(
             card.data[elem] as String,
+            textAlign: TextAlign.center,
             style: style,
           ),
         );
       },
     ));
-    layout.add(Padding(
-      padding: EdgeInsets.all(16),
-      child: Visibility(
-        child: Column(
-          children: backFields.mapIndexed(
-            (idx, elem) {
-              var padding = switch (idx) {
-                0 => EdgeInsets.only(top: 32),
-                _ => EdgeInsets.only(top: 16),
-              };
-              var style = switch (idx) {
-                0 => Theme.of(context).textTheme.labelLarge,
-                _ => Theme.of(context).textTheme.labelLarge,
-              };
-              return Padding(
-                padding: padding,
-                child: Text(
-                  card.data[elem] as String,
-                  style: style,
+    layout.add(Visibility(
+      child: Column(
+        children: backFields.mapIndexed(
+          (idx, elem) {
+            var padding = switch (idx) {
+              0 => EdgeInsets.only(top: 32, left: 16, right: 16),
+              _ => EdgeInsets.only(top: 16, left: 16, right: 16),
+            };
+            var style = switch (idx) {
+              0 => TextStyle(
+                  fontSize: 14,
+                  color: ColorScheme.of(context).tertiary,
                 ),
-              );
-            },
-          ).toList(),
-        ),
-        maintainAnimation: true,
-        maintainSize: true,
-        maintainState: true,
-        visible: isVisible,
+              _ => TextStyle(
+                  fontSize: 14,
+                  color: ColorScheme.of(context).tertiary,
+                ),
+            };
+            return Padding(
+              padding: padding,
+              child: Text(
+                card.data[elem] as String,
+                textAlign: TextAlign.center,
+                style: style,
+              ),
+            );
+          },
+        ).toList(),
       ),
+      maintainAnimation: true,
+      maintainSize: true,
+      maintainState: true,
+      visible: isVisible,
     ));
 
     return InkWell(

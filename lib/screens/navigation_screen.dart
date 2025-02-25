@@ -62,48 +62,62 @@ class _NavigationScreenState extends State<NavigationScreen> {
   ];
 
   Widget buildBottomBarScaffold() {
+    Widget screen = Builder(
+      builder: destinations[screenIndex].screen,
+    );
+    NavigationBar bottomBar = NavigationBar(
+      selectedIndex: screenIndex,
+      onDestinationSelected: (index) => setState(() => screenIndex = index),
+      destinations: destinations
+          .map((dest) => NavigationDestination(
+                label: dest.label,
+                icon: dest.icon,
+                selectedIcon: dest.selectedIcon,
+              ))
+          .toList(),
+    );
     return Scaffold(
-      body: Builder(builder: destinations[screenIndex].screen),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: screenIndex,
-        onDestinationSelected: (index) => setState(() => screenIndex = index),
-        destinations: destinations
-            .map((dest) => NavigationDestination(
-                  label: dest.label,
-                  icon: dest.icon,
-                  selectedIcon: dest.selectedIcon,
-                ))
-            .toList(),
-      ),
+      body: screen,
+      bottomNavigationBar: bottomBar,
     );
   }
 
-  Widget buildDrawerScaffold() {
+  Widget buildSideBarScaffold() {
+    Widget screen = Expanded(
+      child: Align(
+        alignment: Alignment.center,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(maxWidth: 600),
+          child: Builder(builder: destinations[screenIndex].screen),
+        ),
+      ),
+    );
+    var destinationList = destinations
+        .map((dest) => NavigationRailDestination(
+              label: Text(dest.label),
+              icon: dest.icon,
+              selectedIcon: dest.selectedIcon,
+            ))
+        .toList();
+    var sideBar = Padding(
+      padding: EdgeInsets.symmetric(horizontal: 5),
+      child: NavigationRail(
+        minWidth: 50,
+        selectedIndex: screenIndex,
+        useIndicator: true,
+        onDestinationSelected: (index) => setState(() => screenIndex = index),
+        destinations: destinationList,
+      ),
+    );
     return Scaffold(
       body: SafeArea(
         bottom: false,
         top: false,
         child: Row(
           children: [
-            Padding(
-              padding: EdgeInsets.symmetric(horizontal: 5),
-              child: NavigationRail(
-                minWidth: 50,
-                selectedIndex: screenIndex,
-                useIndicator: true,
-                onDestinationSelected: (index) =>
-                    setState(() => screenIndex = index),
-                destinations: destinations
-                    .map((dest) => NavigationRailDestination(
-                          label: Text(dest.label),
-                          icon: dest.icon,
-                          selectedIcon: dest.selectedIcon,
-                        ))
-                    .toList(),
-              ),
-            ),
+            sideBar,
             const VerticalDivider(thickness: 1, width: 1),
-            Expanded(child: Builder(builder: destinations[screenIndex].screen))
+            screen,
           ],
         ),
       ),
@@ -113,7 +127,7 @@ class _NavigationScreenState extends State<NavigationScreen> {
   @override
   Widget build(BuildContext context) {
     return showNavigationDrawer
-        ? buildDrawerScaffold()
+        ? buildSideBarScaffold()
         : buildBottomBarScaffold();
   }
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:vocab_box/common/deck_metadata.dart';
 import 'package:vocab_box/common/learning_arguments.dart';
 import 'package:vocab_box/screens/learning_screen.dart';
@@ -15,12 +16,15 @@ class DeckSection extends StatelessWidget {
     final completeCount = _deckMetadata.completeCount;
     final learningCount = _deckMetadata.learningCount;
 
-    final deckInfoRow = Row(
+    final topRow = Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(
           "${deckName}",
-          style: Theme.of(context).textTheme.titleMedium,
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+          ),
         ),
         ElevatedButton.icon(
           icon: Icon(Icons.inbox),
@@ -43,42 +47,42 @@ class DeckSection extends StatelessWidget {
       value: (completeCount / deckCount),
       minHeight: 6,
     );
-    final learningInfoRow = Row(
+    final bottomRowTextStyle = GoogleFonts.notoSansMono(
+      fontSize: 12,
+    );
+    final bottomRow = Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(
-          "Learning ${learningCount.toString()}",
-          style: Theme.of(context).textTheme.labelLarge,
+          "${learningCount.toString()} in progress",
+          style: bottomRowTextStyle,
         ),
         Text(
           "${deckCount.toString()} in total",
-          style: Theme.of(context).textTheme.labelLarge,
+          style: bottomRowTextStyle,
         ),
       ],
     );
 
     return Align(
-      alignment: Alignment.centerLeft,
-      child: Card.outlined(
-        margin: EdgeInsets.all(16),
-        clipBehavior: Clip.hardEdge,
-        child: Container(
-          padding: EdgeInsets.all(16),
-          constraints: BoxConstraints(minWidth: 400, maxWidth: 500),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Padding(
-                padding: EdgeInsets.only(bottom: 5),
-                child: deckInfoRow,
-              ),
-              Padding(
-                padding: EdgeInsets.symmetric(vertical: 10),
-                child: progressBarRow,
-              ),
-              learningInfoRow
-            ],
-          ),
+      alignment: Alignment.center,
+      child: Container(
+        color: ColorScheme.of(context).surfaceContainer,
+        padding: EdgeInsets.all(16),
+        constraints: BoxConstraints(minWidth: 400, maxWidth: 500),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: EdgeInsets.only(bottom: 5),
+              child: topRow,
+            ),
+            Padding(
+              padding: EdgeInsets.symmetric(vertical: 10),
+              child: progressBarRow,
+            ),
+            bottomRow
+          ],
         ),
       ),
     );

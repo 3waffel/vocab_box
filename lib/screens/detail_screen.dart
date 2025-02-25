@@ -15,11 +15,11 @@ class DetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    var layout = deckMetadata.frontFields.mapIndexed(
+    var frontFieldLayout = deckMetadata.frontFields.mapIndexed(
       (idx, elem) {
         var style = switch (idx) {
-          0 => Theme.of(context).textTheme.headlineSmall,
-          _ => Theme.of(context).textTheme.bodyLarge,
+          0 => TextTheme.of(context).headlineSmall,
+          _ => TextTheme.of(context).bodyLarge,
         };
 
         return ListTile(
@@ -32,11 +32,11 @@ class DetailScreen extends StatelessWidget {
       },
     ).toList();
 
-    layout.addAll(deckMetadata.backFields.mapIndexed(
+    var backFieldLayout = deckMetadata.backFields.mapIndexed(
       (idx, elem) {
         var style = switch (idx) {
-          0 => Theme.of(context).textTheme.bodyMedium,
-          _ => Theme.of(context).textTheme.labelMedium,
+          0 => TextTheme.of(context).bodyMedium,
+          _ => TextTheme.of(context).labelMedium,
         };
         return ListTile(
           title: Text(
@@ -45,20 +45,24 @@ class DetailScreen extends StatelessWidget {
           ),
         );
       },
-    ));
-
-    layout.add(ListTile(
-      title: Text(
-        "Learning Progress: ${card.learningProgress}",
-        style: Theme.of(context).textTheme.labelMedium,
-      ),
-    ));
+    ).toList();
 
     return Scaffold(
       appBar: AppBar(),
       body: ListView(
         padding: EdgeInsets.symmetric(horizontal: 20),
-        children: layout,
+        children: [
+          Column(children: frontFieldLayout),
+          Divider(),
+          Column(children: backFieldLayout),
+          Divider(),
+        ],
+      ),
+      bottomSheet: ListTile(
+        title: Text("Learning Progress: ${card.learningProgress}"),
+        titleTextStyle: TextTheme.of(context).labelSmall,
+        subtitle: Text("Last Updated: ${card.updatedAt}"),
+        subtitleTextStyle: TextTheme.of(context).labelSmall,
       ),
     );
   }

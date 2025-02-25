@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:vocab_box/data/database/card_repository.dart';
@@ -34,7 +35,7 @@ class _StartScreenState extends State<StartScreen> {
         cardRepository = CardRepository.local;
         Navigator.popAndPushNamed(context, NavigationScreen.id);
       } catch (e) {
-        SnackBarExt(context).fluidSnackBar("Failed to set up store");
+        navigatorSnackBar("Failed to set up store");
         rethrow;
       }
     } else {
@@ -54,7 +55,7 @@ class _StartScreenState extends State<StartScreen> {
         throw "Platform not supported";
       }
     } catch (e) {
-      SnackBarExt(context).fluidSnackBar("Failed to sign in");
+      navigatorSnackBar("Failed to sign in");
       rethrow;
     }
     if (auth.currentUser != null) {
@@ -71,7 +72,10 @@ class _StartScreenState extends State<StartScreen> {
     );
     var title = Text(
       "Vocab Box",
-      style: Theme.of(context).textTheme.headlineLarge,
+      style: GoogleFonts.notable(
+        fontSize: 32,
+        fontWeight: FontWeight.bold,
+      ),
     );
 
     var newAuthButton = ElevatedButton.icon(

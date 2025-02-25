@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:vocab_box/common/deck_metadata.dart';
 import 'package:vocab_box/components/deck_import_form.dart';
 import 'package:vocab_box/components/deck_section.dart';
@@ -18,6 +19,56 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   static List<DeckMetadata> deckStatusList = [];
+
+  Widget buildDeckListView() {
+    return ListView.builder(
+      itemCount: deckStatusList.length,
+      itemBuilder: (context, index) => Slidable(
+        key: Key(deckStatusList[index].deckName),
+        child: DeckSection(deckStatusList[index]),
+        endActionPane: ActionPane(
+          motion: const DrawerMotion(),
+          dismissible: DismissiblePane(
+            closeOnCancel: true,
+            onDismissed: () => setState(() {
+              var deckName = deckStatusList[index].deckName;
+              deckStatusList.removeAt(index);
+              cardRepository.deleteTable(deckName);
+            }),
+            confirmDismiss: () async {
+              var confirm = await showDialog(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: Text("Delete Deck"),
+                  content: Text("Are you sure to delete this deck?"),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.of(context).pop(true),
+                      child: Text("Continue"),
+                    ),
+                    TextButton(
+                      onPressed: () => Navigator.of(context).pop(false),
+                      child: Text("Cancel"),
+                    ),
+                  ],
+                ),
+              );
+              return confirm ?? false;
+            },
+          ),
+          children: [
+            SlidableAction(
+              onPressed: (_) => _syncSingleDeckStatus(
+                deckStatusList[index].deckName,
+              ),
+              icon: Icons.sync,
+              backgroundColor: ColorScheme.of(context).tertiary,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -40,36 +91,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
-      body: ListView.builder(
-        itemCount: deckStatusList.length,
-        itemBuilder: (context, index) => Dismissible(
-          key: Key(deckStatusList[index].deckName),
-          direction: DismissDirection.endToStart,
-          onDismissed: (direction) => setState(() {
-            var deckName = deckStatusList[index].deckName;
-            deckStatusList.removeAt(index);
-            cardRepository.deleteTable(deckName);
-          }),
-          confirmDismiss: (direction) async => await showDialog(
-            context: context,
-            builder: (context) => AlertDialog(
-              title: Text("Delete Deck"),
-              content: Text("Are you sure to delete this deck?"),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(true),
-                  child: Text("Continue"),
-                ),
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(false),
-                  child: Text("Cancel"),
-                ),
-              ],
-            ),
-          ),
-          child: DeckSection(deckStatusList[index]),
-        ),
-      ),
+      body: buildDeckListView(),
     );
   }
 
@@ -96,7 +118,7 @@ class _HomeScreenState extends State<HomeScreen> {
     }
     if (!listEquals(deckStatusList, newDeckStatusList)) {
       setState(() => deckStatusList = newDeckStatusList);
-      SnackBarExt(context).fluidSnackBar("Sync All Done");
+      navigatorSnackBar("Sync All Done");
     }
   }
 
@@ -110,6 +132,6 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() {
       deckStatusList[index] = deckMetadata;
     });
-    SnackBarExt(context).fluidSnackBar("Sync Done: ${deckName}");
+    navigatorSnackBar("Sync Done: ${deckName}");
   }
 }

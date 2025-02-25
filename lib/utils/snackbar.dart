@@ -6,12 +6,12 @@ extension SnackBarExt on BuildContext {
     ScaffoldMessenger.of(this)
       ..hideCurrentSnackBar()
       ..showSnackBar(SnackBar(
-        content: Text(message, style: Theme.of(this).textTheme.labelMedium),
+        content: Text(message, style: TextTheme.of(this).labelMedium),
         duration: Duration(seconds: 2),
         behavior: SnackBarBehavior.floating,
         showCloseIcon: true,
-        closeIconColor: Theme.of(this).colorScheme.primary,
-        backgroundColor: Theme.of(this).colorScheme.inversePrimary,
+        closeIconColor: ColorScheme.of(this).primary,
+        backgroundColor: ColorScheme.of(this).primaryContainer,
       ));
   }
 }

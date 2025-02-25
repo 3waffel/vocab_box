@@ -9,7 +9,22 @@ class CardModel extends BaseModel {
   @override
   String toString() {
     return data.entries
-        .fold("", (prev, curr) => prev + curr.key + " | " + curr.value + "\n");
+        .fold<Map<String, int>>({}, (prev, curr) {
+          prev[curr.key] = curr.key.length > curr.value.toString().length
+              ? curr.key.length
+              : curr.value.toString().length;
+          return prev;
+        })
+        .entries
+        .fold<List<String>>(["", ""], (prev, curr) {
+          final key = curr.key.padRight(curr.value);
+          final value = data[curr.key].toString().padRight(curr.value);
+          prev[0] += key + " | ";
+          prev[1] += value + " | ";
+          return prev;
+        })
+        .map((line) => line.substring(0, line.length - 3) + "\n")
+        .join();
   }
 
   CardModel({
@@ -25,6 +40,11 @@ class CardModel extends BaseModel {
       'learningProgress',
       (_) => learningProgress,
       ifAbsent: () => learningProgress,
+    );
+    data.update(
+      'updatedAt',
+      (_) => updatedAt.toString(),
+      ifAbsent: () => updatedAt.toString(),
     );
     return {'id': id, 'data': jsonEncode(data)};
   }

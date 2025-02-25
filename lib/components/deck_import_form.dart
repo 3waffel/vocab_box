@@ -6,6 +6,7 @@ import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:vocab_box/components/draggable_headers.dart';
 import 'package:vocab_box/data/database/card_repository.dart';
@@ -22,7 +23,6 @@ class _DeckImportFormState extends State<DeckImportForm> {
   String? fileContent;
 
   var deckNameController = TextEditingController();
-  var cardListController = TextEditingController();
   var fieldDelimiterController = TextEditingController(text: '\t');
   var eolController = TextEditingController(text: '\n');
   var emptyValueController = TextEditingController(text: '');
@@ -54,18 +54,19 @@ class _DeckImportFormState extends State<DeckImportForm> {
       convertEmptyTo: emptyValueController.text,
       shouldParseNumbers: false,
     );
-    final fields = _converter.convert(content);
-    final values = fields
-        .skip(1)
-        .where((row) => row.any((cell) => cell.toString().trim().isNotEmpty))
+    final fields = _converter
+        .convert(content)
+        .map((row) => row.map((cell) => cell.toString().trim()).toList())
+        .where((row) => row.any((cell) => cell.isNotEmpty))
         .toList();
 
     setState(() {
-      headers = fields.first.cast<String>();
+      headers = fields.first;
       frontFields.clear();
       backFields.clear();
     });
 
+    final values = fields.skip(1).toList();
     return List.generate(
       values.length,
       (index) {
@@ -119,11 +120,9 @@ class _DeckImportFormState extends State<DeckImportForm> {
       }
       setState(() {
         cardList = _cardList;
-        cardListController.text = _cardList.first.toString();
       });
     } catch (e) {
-      SnackBarExt(context)
-          .fluidSnackBar("Failed to load the deck: " + e.toString());
+      navigatorSnackBar("Failed to load the deck: " + e.toString());
     }
   }
 
@@ -132,7 +131,7 @@ class _DeckImportFormState extends State<DeckImportForm> {
       return;
     }
     var tableName = deckNameController.text;
-    // cardRepository.deleteTable(tableName);
+
     cardRepository.createTable(tableName);
     cardRepository.insertMany(items: cardList!, table: tableName);
 
@@ -143,53 +142,55 @@ class _DeckImportFormState extends State<DeckImportForm> {
 
   List<Step> getSteps() {
     return <Step>[
-      buildFileLoadingStep(),
-      buildFieldsReorderingStep(),
-      buildResultCheckingStep(),
+      buildLoadFileStep(),
+      buildFieldsLayoutStep(),
     ];
   }
 
   Widget buildFormatInputs() {
+    var fieldDelimiterDropdown = DropdownButtonFormField<String>(
+      value: fieldDelimiterController.text,
+      decoration: InputDecoration(labelText: 'Field Delimiter'),
+      items: [
+        DropdownMenuItem(value: '\t', child: Text(r'Tab "\t"')),
+        DropdownMenuItem(value: ',', child: Text(r'Comma ","')),
+        DropdownMenuItem(value: ';', child: Text(r'Semicolon ";"')),
+        DropdownMenuItem(value: '|', child: Text(r'Pipe "|"')),
+      ],
+      onChanged: (value) {
+        setState(() {
+          fieldDelimiterController.text = value!;
+        });
+      },
+    );
+    var eolCharacterDropdown = DropdownButtonFormField<String>(
+      value: eolController.text,
+      decoration: InputDecoration(labelText: 'End-of-Line Character'),
+      items: [
+        DropdownMenuItem(value: '\n', child: Text(r'Newline "\n"')),
+        DropdownMenuItem(
+            value: '\r\n', child: Text(r'Carriage Return + Newline "\r\n"')),
+      ],
+      onChanged: (value) {
+        setState(() {
+          eolController.text = value!;
+        });
+      },
+    );
+    var emptyReplacementTextField = TextField(
+      controller: emptyValueController,
+      decoration: InputDecoration(labelText: 'Empty Value Replacement'),
+    );
     return Column(
       children: [
-        DropdownButtonFormField<String>(
-          value: fieldDelimiterController.text,
-          decoration: InputDecoration(labelText: 'Field Delimiter'),
-          items: [
-            DropdownMenuItem(value: '\t', child: Text('Tab')),
-            DropdownMenuItem(value: ',', child: Text('Comma')),
-            DropdownMenuItem(value: ';', child: Text('Semicolon')),
-            DropdownMenuItem(value: '|', child: Text('Pipe')),
-          ],
-          onChanged: (value) {
-            setState(() {
-              fieldDelimiterController.text = value!;
-            });
-          },
-        ),
-        DropdownButtonFormField<String>(
-          value: eolController.text,
-          decoration: InputDecoration(labelText: 'End-of-Line Character'),
-          items: [
-            DropdownMenuItem(value: '\n', child: Text('Newline')),
-            DropdownMenuItem(
-                value: '\r\n', child: Text('Carriage Return + Newline')),
-          ],
-          onChanged: (value) {
-            setState(() {
-              eolController.text = value!;
-            });
-          },
-        ),
-        TextField(
-          controller: emptyValueController,
-          decoration: InputDecoration(labelText: 'Empty Value Replacement'),
-        ),
+        fieldDelimiterDropdown,
+        eolCharacterDropdown,
+        emptyReplacementTextField,
       ],
     );
   }
 
-  Step buildFileLoadingStep() {
+  Step buildLoadFileStep() {
     var formChildren = [
       TextFormField(
         controller: deckNameController,
@@ -218,14 +219,10 @@ class _DeckImportFormState extends State<DeckImportForm> {
           child: Text("Select File"),
         ),
       ),
-      SizedBox(height: 20),
-      buildFormatInputs(),
-      TextFormField(
-        readOnly: true,
-        decoration: InputDecoration(labelText: "Loaded Headers"),
-        maxLines: 6,
-        controller: cardListController,
-        validator: (_) => headers == null ? "File not loaded yet" : null,
+      Divider(),
+      Padding(
+        padding: EdgeInsets.symmetric(vertical: 10),
+        child: buildFormatInputs(),
       ),
       Padding(
         padding: EdgeInsets.symmetric(vertical: 10),
@@ -234,10 +231,34 @@ class _DeckImportFormState extends State<DeckImportForm> {
           child: Text("Load File"),
         ),
       ),
+      Divider(),
+      if (cardList != null)
+        TextFormField(
+          readOnly: true,
+          maxLines: null,
+          controller: TextEditingController.fromValue(
+            TextEditingValue(text: cardList!.length.toString()),
+          ),
+          decoration: InputDecoration(labelText: "Deck Size"),
+          validator: (_) => cardList == null ? "File not loaded yet" : null,
+          style: GoogleFonts.notoSansMono(textStyle: TextStyle(fontSize: 12)),
+        ),
+      if (cardList != null)
+        TextFormField(
+          readOnly: true,
+          maxLines: null,
+          controller: TextEditingController.fromValue(
+            TextEditingValue(text: cardList!.first.toString()),
+          ),
+          scrollController: ScrollController(),
+          decoration: InputDecoration(labelText: "Loaded Example"),
+          validator: (_) => headers == null ? "File not loaded yet" : null,
+          style: GoogleFonts.notoSansMono(textStyle: TextStyle(fontSize: 12)),
+        ),
     ];
 
     return Step(
-      title: Text("Loading"),
+      title: Text("Load"),
       isActive: currentStep == 0,
       state: switch (currentStep) {
         0 => StepState.editing,
@@ -254,10 +275,10 @@ class _DeckImportFormState extends State<DeckImportForm> {
     );
   }
 
-  Step buildFieldsReorderingStep() {
+  Step buildFieldsLayoutStep() {
     if (headers == null) {
       return Step(
-        title: Text("Reordering"),
+        title: Text("Layout"),
         isActive: currentStep == 1,
         state: StepState.disabled,
         content: Center(child: Text("Please complete the previous step first")),
@@ -265,7 +286,7 @@ class _DeckImportFormState extends State<DeckImportForm> {
     }
 
     return Step(
-      title: Text("Reordering"),
+      title: Text("Layout"),
       isActive: currentStep == 1,
       state: switch (currentStep) {
         1 => StepState.editing,
@@ -289,38 +310,6 @@ class _DeckImportFormState extends State<DeckImportForm> {
     );
   }
 
-  Step buildResultCheckingStep() {
-    List<Widget> formChildren;
-    if (cardList == null) {
-      formChildren = [];
-    } else {
-      formChildren = [
-        Text("deck name:\t" + deckNameController.text),
-        Text("deck size:\t" + cardList!.length.toString()),
-        Text(cardList!.first.toString()),
-      ];
-    }
-
-    return Step(
-      title: Text("Check"),
-      isActive: currentStep == 2,
-      state: switch (currentStep) {
-        2 => StepState.editing,
-        _ when currentStep > 2 => StepState.complete,
-        _ => StepState.disabled,
-      },
-      content: Form(
-        key: _formKeys[2],
-        child: Wrap(
-          clipBehavior: Clip.hardEdge,
-          direction: Axis.vertical,
-          spacing: 20,
-          children: formChildren,
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -337,7 +326,7 @@ class _DeckImportFormState extends State<DeckImportForm> {
             if (_formKeys[currentStep].currentState!.validate()) {
               if (currentStep == getSteps().length - 1) {
                 _updateTable();
-                Navigator.of(context).pop();
+                Navigator.of(context).pop(deckNameController.text);
               } else {
                 setState(() => currentStep += 1);
               }
