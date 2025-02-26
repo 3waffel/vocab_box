@@ -29,12 +29,6 @@ dart run flutterfire_cli:flutterfire configure
   - `KEYSTORE_KEY_PASSWORD` -> `keyPassword`
   - `KEYSTORE_KEY_ALIAS` -> `keyAlias`
 
-### Test Locally 
-
-```
-act -W .github/workflows/test.yml --secret-file .secrets -P windows-latest=-self-hosted
-```
-
 ## Notice
 
 ### Windows Release

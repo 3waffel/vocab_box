@@ -20,14 +20,21 @@ class App extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    var usedScheme = FlexScheme.verdunHemlock;
+    var fontFamily = GoogleFonts.notoSans().fontFamily;
+
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Vocab Box',
-      theme: FlexThemeData.dark(
-        scheme: FlexScheme.verdunHemlock,
+      theme: FlexThemeData.light(
+        appBarElevation: 0.5,
+        scheme: usedScheme,
+        fontFamily: fontFamily,
+      ),
+      darkTheme: FlexThemeData.dark(
         appBarElevation: 2,
-        useMaterial3: true,
-        fontFamily: GoogleFonts.notoSans().fontFamily,
+        scheme: usedScheme,
+        fontFamily: fontFamily,
       ),
       initialRoute: StartScreen.id,
       navigatorKey: navigatorKey,

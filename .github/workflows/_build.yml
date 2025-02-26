@@ -71,10 +71,6 @@ jobs:
           channel: "stable"
           cache: true
 
-      - name: Set up Android SDK
-        if: env.ACT
-        uses: android-actions/setup-android@v3
-
       - name: Install Dependencies
         run: flutter pub get
 
