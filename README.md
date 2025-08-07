@@ -31,6 +31,5 @@ dart run flutterfire_cli:flutterfire configure
 
 ## Notice
 
-### Windows Release
-
-- This app uses [`sqflite_common_ffi`](https://pub.dev/packages/sqflite_common_ffi), so make sure `sqlite3.dll` is in the same folder as the executable.
+- For Windows release, [`sqflite_common_ffi`](https://pub.dev/packages/sqflite_common_ffi) is used, make sure `sqlite3.dll` is in the same folder as the executable.
+- For Web release, [`sqlite_common_ffi_web`](https://pub.dev/packages/sqflite_common_ffi_web) is used, follow the doc to set up binaries.

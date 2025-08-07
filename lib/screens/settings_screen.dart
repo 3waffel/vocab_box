@@ -86,6 +86,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
             title: Text("Back to Start Screen"),
             onTap: () => Navigator.popAndPushNamed(context, StartScreen.id),
           ),
+          ListTile(
+            leading: Icon(Icons.sync),
+            title: Text("Sync Settings"),
+            onTap: null,
+          ),
           ExpansionTile(
             leading: Icon(Icons.menu),
             title: Text("Preferences"),

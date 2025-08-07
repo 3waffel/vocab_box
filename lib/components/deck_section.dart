@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:vocab_box/common/deck_metadata.dart';
 import 'package:vocab_box/common/learning_arguments.dart';
 import 'package:vocab_box/screens/learning_screen.dart';
+import 'package:vocab_box/utils/navigation.dart';
 
 class DeckSection extends StatelessWidget {
   final DeckMetadata _deckMetadata;
@@ -29,14 +30,12 @@ class DeckSection extends StatelessWidget {
         ElevatedButton.icon(
           icon: Icon(Icons.inbox),
           label: Text("Start"),
-          onPressed: () => Navigator.push(
+          onPressed: () => Navigator.of(context).pushConstrained(
             context,
-            MaterialPageRoute(
-              builder: (context) => const LearningScreen(),
-              settings: RouteSettings(
-                arguments: LearningArguments(
-                  deckMetadata: _deckMetadata,
-                ),
+            LearningScreen(),
+            settings: RouteSettings(
+              arguments: LearningArguments(
+                deckMetadata: _deckMetadata,
               ),
             ),
           ),

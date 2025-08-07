@@ -3,6 +3,7 @@ import 'package:vocab_box/common/deck_metadata.dart';
 import 'package:vocab_box/data/database/card_repository.dart';
 import 'package:vocab_box/data/models/card_model.dart';
 import 'package:vocab_box/screens/detail_screen.dart';
+import 'package:vocab_box/utils/navigation.dart';
 
 /// TODO implement lazy load
 class BrowserScreen extends StatefulWidget {
@@ -50,13 +51,11 @@ class _BrowserScreenState extends State<BrowserScreen> {
                 return ListTile(
                   title: title,
                   subtitle: subtitle,
-                  onTap: () => Navigator.push(
+                  onTap: () => Navigator.of(context).pushConstrained(
                     context,
-                    MaterialPageRoute(
-                      builder: (context) => DetailScreen(
-                        card: filtered[index],
-                        deckMetadata: deckMetadata!,
-                      ),
+                    DetailScreen(
+                      card: filtered[index],
+                      deckMetadata: deckMetadata!,
                     ),
                   ),
                 );

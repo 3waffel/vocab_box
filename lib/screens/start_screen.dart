@@ -30,8 +30,14 @@ class _StartScreenState extends State<StartScreen> {
     final prefs = await SharedPreferences.getInstance();
     if (!prefs.containsKey('persistedStoragePath')) {
       try {
-        final appDocDir = await getApplicationDocumentsDirectory();
-        prefs.setString('persistedStoragePath', appDocDir.path);
+        String path;
+        if (kIsWeb) {
+          path = "/assets/db";
+        } else {
+          final appDocDir = await getApplicationDocumentsDirectory();
+          path = appDocDir.path;
+        }
+        prefs.setString('persistedStoragePath', path);
         cardRepository = CardRepository.local;
         Navigator.popAndPushNamed(context, NavigationScreen.id);
       } catch (e) {
@@ -96,7 +102,7 @@ class _StartScreenState extends State<StartScreen> {
     var useLocalButton = ElevatedButton.icon(
       icon: Icon(Icons.storage),
       label: Text("Start with local database"),
-      onPressed: (kIsWeb) ? null : _setupStore,
+      onPressed: _setupStore,
     );
 
     return Scaffold(

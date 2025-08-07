@@ -8,6 +8,7 @@ import 'package:vocab_box/components/deck_import_form.dart';
 import 'package:vocab_box/components/deck_section.dart';
 import 'package:vocab_box/data/database/card_repository.dart';
 import 'package:vocab_box/utils/snackbar.dart';
+import 'package:vocab_box/utils/navigation.dart';
 
 class HomeScreen extends StatefulWidget {
   static const String id = "/home";
@@ -80,9 +81,9 @@ class _HomeScreenState extends State<HomeScreen> {
         children: [
           IconButton.filledTonal(
             icon: Icon(Icons.add),
-            onPressed: () => Navigator.push(
+            onPressed: () => Navigator.of(context).pushConstrained(
               context,
-              MaterialPageRoute(builder: (context) => DeckImportForm()),
+              DeckImportForm(),
             ),
           ),
           IconButton.filledTonal(

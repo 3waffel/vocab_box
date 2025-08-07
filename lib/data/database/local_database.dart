@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:path/path.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
+import 'package:sqflite_common_ffi_web/sqflite_ffi_web.dart';
 import 'package:vocab_box/data/database/data_retrieval.dart';
 import 'package:vocab_box/data/models/base_model.dart';
 
@@ -35,19 +36,20 @@ class LocalDatabase<T extends BaseModel> implements DataRetrieval<T> {
   }
 
   Future<Database> _openDatabase(String path) async {
-    if (!kIsWeb) {
-      if (Platform.isWindows || Platform.isLinux) {
-        sqfliteFfiInit();
-        databaseFactory = databaseFactoryFfi;
-      }
-      final database = await openDatabase(
-        path,
-        version: _databaseVersion,
-        // onCreate: _createDatabase,
-      );
-      return database;
+    if (kIsWeb) {
+      databaseFactory = databaseFactoryFfiWeb;
+    } else if (Platform.isWindows || Platform.isLinux) {
+      sqfliteFfiInit();
+      databaseFactory = databaseFactoryFfi;
+    } else {
+      throw Exception("Unsupported platform");
     }
-    throw Exception("Unsupported platform");
+    final database = await openDatabase(
+      path,
+      version: _databaseVersion,
+      // onCreate: _createDatabase,
+    );
+    return database;
   }
 
   // Future<void> _createDatabase(Database db, int version) async {
