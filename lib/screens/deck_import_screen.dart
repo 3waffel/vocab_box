@@ -13,12 +13,12 @@ import 'package:vocab_box/data/database/card_repository.dart';
 import 'package:vocab_box/utils/snackbar.dart';
 import 'package:vocab_box/data/models/card_model.dart';
 
-class DeckImportForm extends StatefulWidget {
+class DeckImportScreen extends StatefulWidget {
   @override
-  State<StatefulWidget> createState() => _DeckImportFormState();
+  State<StatefulWidget> createState() => _DeckImportScreenState();
 }
 
-class _DeckImportFormState extends State<DeckImportForm> {
+class _DeckImportScreenState extends State<DeckImportScreen> {
   int currentStep = 0;
   String? fileContent;
 

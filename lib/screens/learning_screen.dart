@@ -167,21 +167,39 @@ class _LearningScreenState extends State<LearningScreen> {
     layout.add(Spacer(flex: 2));
 
     if (backFields.isNotEmpty) {
+      // Display an input box for the first field.
       layout.add(Padding(
         padding: EdgeInsets.all(16),
         child: isVisible && backFields.isNotEmpty
             ? PrettyDiffText(
                 oldText: _inputController.text,
                 newText: card.data[backFields.first] as String,
-                defaultTextStyle: TextStyle(fontSize: 16),
+                defaultTextStyle: TextStyle(
+                  fontSize: 16,
+                  color: ColorScheme.of(context).primary,
+                ),
+                addedTextStyle: TextStyle(
+                  color: ColorScheme.of(context).primary,
+                  backgroundColor: ColorScheme.of(context).primaryContainer,
+                ),
+                deletedTextStyle: TextStyle(
+                  color: ColorScheme.of(context).error,
+                  backgroundColor: ColorScheme.of(context).errorContainer,
+                ),
               )
-            : TextField(
-                controller: _inputController,
-                decoration: InputDecoration(border: OutlineInputBorder()),
-                onSubmitted: (_) => setState(() => isVisible = true),
+            : IntrinsicWidth(
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(minWidth: 250),
+                  child: TextField(
+                    controller: _inputController,
+                    decoration: InputDecoration(border: OutlineInputBorder()),
+                    onSubmitted: (_) => setState(() => isVisible = true),
+                  ),
+                ),
               ),
       ));
 
+      // Display remaining fields.
       layout.add(AnimatedContainer(
           duration: Duration(milliseconds: 300),
           curve: Curves.easeInOut,

@@ -4,7 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:vocab_box/common/deck_metadata.dart';
-import 'package:vocab_box/components/deck_import_form.dart';
+import 'package:vocab_box/screens/deck_import_screen.dart';
 import 'package:vocab_box/components/deck_section.dart';
 import 'package:vocab_box/data/database/card_repository.dart';
 import 'package:vocab_box/utils/snackbar.dart';
@@ -83,7 +83,7 @@ class _HomeScreenState extends State<HomeScreen> {
             icon: Icon(Icons.add),
             onPressed: () => Navigator.of(context).pushConstrained(
               context,
-              DeckImportForm(),
+              DeckImportScreen(),
             ),
           ),
           IconButton.filledTonal(

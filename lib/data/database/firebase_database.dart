@@ -5,14 +5,14 @@ import 'package:vocab_box/data/models/base_model.dart';
 
 typedef FBDatabase = DocumentReference<Map<String, dynamic>>;
 
-class FireBaseDatabase<T extends BaseModel> implements DataRetrieval<T> {
+class FirebaseDatabase<T extends BaseModel> implements DataRetrieval<T> {
   // static const table = 'default_deck';
 
   /// private constructor
   // FireBaseDatabase._internal();
   // static final FireBaseDatabase<Never> _instance = FireBaseDatabase._internal();
   // factory FireBaseDatabase() => _instance;
-  const FireBaseDatabase();
+  const FirebaseDatabase();
 
   static FBDatabase? _database = null;
   Future<FBDatabase> get database async {
@@ -43,17 +43,6 @@ class FireBaseDatabase<T extends BaseModel> implements DataRetrieval<T> {
     //   }
     // }
     return dbRef;
-  }
-
-  Future<List<Map<String, Object?>>> getLearningFromTable(String table) async {
-    final dbRef = await database;
-    final tableRef = dbRef.collection(table);
-    final tableSnapshot =
-        await tableRef.where("isLearning", isEqualTo: 1).get();
-    return List.generate(
-      tableSnapshot.docs.length,
-      (index) => tableSnapshot.docs[index].data(),
-    );
   }
 
   @override

@@ -10,7 +10,7 @@ enum CardRepository implements DataRetrieval<CardModel> {
   firebase(_FBDB);
 
   static const _LocalDB = const LocalDatabase<CardModel>();
-  static const _FBDB = const FireBaseDatabase<CardModel>();
+  static const _FBDB = const FirebaseDatabase<CardModel>();
 
   final DataRetrieval<CardModel> dataRetrieval;
   const CardRepository(this.dataRetrieval);
